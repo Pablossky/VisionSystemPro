@@ -20,7 +20,7 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
-      role TEXT CHECK(role IN ('operator', 'supervisor')) NOT NULL
+      role TEXT CHECK(role IN ('programmer', 'service', 'admin', 'operator')) NOT NULL
     )
   `);
 
@@ -49,9 +49,9 @@ db.serialize(() => {
     if (!err && row.count === 0) {
       db.run(`
         INSERT INTO users (username, password, role) VALUES
-        ('jan.kowalski', '1234', 'operator'),
-        ('anna.nowak', 'admin123', 'supervisor'),
-        ('me', '1', 'operator')
+        ('jan', '1234', 'operator'),
+        ('anna', '123', 'admin'),
+        ('pawel', '1', 'programmer')
       `);
     }
   });

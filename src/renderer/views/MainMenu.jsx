@@ -1,73 +1,109 @@
 import React, { useState } from 'react';
 import ControlPanel from './ControlPanel';
-import LogsWindow from './LogsWindow'; // import okna logów
+import LogsWindow from './LogsWindow';
+import MarkerSearch from './MarkerSearch';
+import './MainMenu.css';
+
+// Definiujemy dostępne opcje w zależności od roli użytkownika
 
 const optionsByRole = {
-  Programistyczny: [
-    "Zmiana ustawień systemu",
-    "Kalibracja",
-    "Zarządzanie użytkownikami",
-    "Zarządzanie bazą danych",
-    "Dostęp do kamer",
-    "Zdalne logi i aktualizacje",
-    "Raporty"
+  programmer: [
+    "Logi",
+    "Skanuj marker",
+    "Wyszukaj marker",
+    "Wyloguj się",
   ],
-  Serwisowy: [
-    "Kalibracja",
-    "Zarządzanie użytkownikami",
-    "Zarządzanie bazą danych",
-    "Dostęp do kamer",
-    "Zdalne logi",
-    "Raporty"
+  Service: [
+    "Logi",
+    "Skanuj marker",
+    "Wyszukaj marker",
+    "Wyloguj się",
   ],
-  Administrator: [
-    "Zarządzanie bazą danych",
-    "Zarządzanie użytkownikami",
-    "Ustawienia tolerancji",
-    "Raporty"
-  ],
-  Nadzorca: [
-    "Kontrola operatorów",
-    "Weryfikacja elementów NOK",
-    "Raporty dzienne i statystyki"
+  Admin: [
+    "Logi",
+    "Skanuj marker",
+    "Wyszukaj marker",
+    "Wyloguj się",
   ],
   Operator: [
     "Skanuj marker",
-    "Rozpocznij kontrolę",
-    "Zatwierdź OK/NOK",
-    "Historia kontroli"
+    "Wyszukaj marker",
+    "Wyloguj się"
   ]
 };
 
-export default function MainMenu({ user }) {
+export default function MainMenu({ user, onLogout }) {
   const [showLogs, setShowLogs] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
 
   const handleStartScan = (elements) => {
-    // tutaj dodaj logikę, co się dzieje po starcie kontroli
     console.log('Start scanning elements:', elements);
   };
 
   const options = optionsByRole[user.role] || [];
 
-  return (
-    <>
-      <div style={{ padding: 20 }}>
-        <h2>Menu główne - {user.role}</h2>
-        <ul>
-          {options.map((opt, idx) => (
-            <li key={idx}>{opt}</li>
-          ))}
-        </ul>
-        <h2>Witaj, {user.username}!</h2>
-        <p>Twoja rola: {user.role}</p>
-        <ControlPanel onStartScan={handleStartScan} />
+  const handleLogoutClick = async () => {
+    try {
+      await window.electronAPI.invoke('logout-user', { username: user.username });
+      onLogout(); 
+    } catch (err) {
+      console.error('Błąd podczas wylogowywania:', err);
+      alert('Błąd podczas wylogowywania');
+    }
+  };
 
-        <button onClick={() => setShowLogs(true)} style={{ marginTop: 20 }}>
-          Pokaż logi
-        </button>
+  const renderRightPanel = () => {
+    if (showLogs) {
+      return <LogsWindow onClose={() => setShowLogs(false)} />;
+    }
+
+    switch (selectedOption) {
+      case "Wyszukaj marker":
+        return <MarkerSearch />;
+      case "Rozpocznij kontrolę":
+      case "Zatwierdź OK/NOK":
+      case "Logi":
+        return <LogsWindow onClose={() => setSelectedOption(null)} />;
+      case "Skanuj marker":
+        return <ControlPanel onStartScan={handleStartScan} user={user} />;
+      case "Wyloguj się":
+        onLogout();
+        return null
+      default:
+        return <div style={{ padding: 20 }}><h2>Wybierz opcję z lewej strony</h2></div>;
+    }
+  };
+
+  return (
+    <div className="main-panel">
+      <div className="left-panel">
+        <div className="card user-info">
+          <h2>Użytkownik: {user.username}</h2>
+          <p>Rola: <strong>{user.role}</strong></p>
+        </div>
+
+        <div className="card access-panel">
+          <h3>Dostępne opcje</h3>
+          <div className="options-grid">
+            {options.map((opt) => (
+              <div
+                key={opt}
+                className={`card option-card ${selectedOption === opt ? 'selected' : ''}`}
+                onClick={() => {
+                  setSelectedOption(opt);
+                  setShowLogs(false);
+                }}
+              >
+                {opt}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {showLogs && <LogsWindow onClose={() => setShowLogs(false)} />}
-    </>
+      <div className="right-panel">
+        {renderRightPanel()}
+      </div>
+    </div>
   );
 }

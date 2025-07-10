@@ -41,6 +41,19 @@ ipcMain.handle('login-user', async (event, { username, password }) => {
   });
 });
 
+ipcMain.handle('logout-user', async (event, { username }) => {
+  return new Promise((resolve, reject) => {
+    db.addLog(username, 'logout', 'Wylogowanie użytkownika', (err) => {
+      if (err) {
+        console.error('Błąd zapisu logu wylogowania:', err);
+        return reject(err);
+      }
+      resolve({ success: true });
+    });
+  });
+});
+
+
 ipcMain.handle('get-marker', async (event, number) => {
   return new Promise((resolve, reject) => {
     db.getMarker(number, (err, row) => {
@@ -83,10 +96,16 @@ ipcMain.handle('get-logs', async () => {
   });
 });
 
-// Pomocnicza funkcja do logowania akcji
-function logAction(action, details = '') {
-  db.addLog(action, details, (err) => {
-    if (err) console.error('Błąd podczas zapisu logu:', err);
+ipcMain.handle('log-action', async (event, { username, action, description }) => {
+  return new Promise((resolve, reject) => {
+    db.addLog(username, action, description, (err) => {
+      if (err) {
+        console.error('Błąd zapisu logu:', err);
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
   });
-}
+});
 

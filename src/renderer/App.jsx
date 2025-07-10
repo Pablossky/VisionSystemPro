@@ -5,12 +5,20 @@ import MainMenu from './views/MainMenu';
 export default function App() {
   const [user, setUser] = useState(null);
 
+  const handleLogin = (loggedUser) => {
+    setUser(loggedUser);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
   return (
     <>
-      {!user ? (
-        <Login onLogin={setUser} />
+      {user ? (
+        <MainMenu user={user} onLogout={handleLogout} />
       ) : (
-        <MainMenu user={user} />
+        <Login onLogin={handleLogin} />
       )}
     </>
   );

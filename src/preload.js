@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   searchMarkers: (term) => ipcRenderer.invoke('search-markers', term),
   getElementsByMarker: (markerNumber) => ipcRenderer.invoke('get-elements-by-marker', markerNumber),
   getLogs: () => ipcRenderer.invoke('get-logs'),
+  logAction: (data) => ipcRenderer.invoke('log-action', data)
 });

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './Login.css';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -16,26 +17,30 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="login-container">
-      <h2>Logowanie</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="text"
-          placeholder="Login"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Hasło"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Zaloguj się</button>
-        {error && <p className="error">{error}</p>}
-      </form>
+    <div className="login-wrapper">
+      <div className="login-panel card">
+        <h2>🔐 Panel logowania</h2>
+        <form onSubmit={handleLogin}>
+          <input
+            type="text"
+            placeholder="Login"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="login-input"
+          />
+          <input
+            type="password"
+            placeholder="Hasło"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="login-input"
+          />
+          <button type="submit" className="log-button">Zaloguj się</button>
+          {error && <p className="error-text">{error}</p>}
+        </form>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
-export default function ControlPanel({ onStartScan }) {
+export default function ControlPanel({ onStartScan, user }) {
+
   const [markerNumber, setMarkerNumber] = useState('');
   const [elements, setElements] = useState([]);
   const [selectedElements, setSelectedElements] = useState(new Set());
@@ -57,14 +58,26 @@ export default function ControlPanel({ onStartScan }) {
     });
   };
 
-  const handleStartScanClick = () => {
-    if (selectedElements.size === 0) {
-      setError('Proszę zaznaczyć przynajmniej jeden element do skanowania');
-      return;
-    }
-    const selectedElemsArray = elements.filter(el => selectedElements.has(el.id));
-    onStartScan(selectedElemsArray);
-  };
+  const handleStartScanClick = async () => {
+  if (selectedElements.size === 0) {
+    setError('Proszę zaznaczyć przynajmniej jeden element do skanowania');
+    return;
+  }
+  const selectedElemsArray = elements.filter(el => selectedElements.has(el.id));
+  
+  try {
+    await window.electronAPI.logAction({
+      username: user.username,
+      action: 'start_scan',
+      description: `Rozpoczęto skanowanie ${selectedElemsArray.length} elementów dla markera ${markerNumber.trim()}`
+    });
+  } catch (err) {
+    console.error('Nie udało się zapisać logu skanowania:', err);
+  }
+
+  onStartScan(selectedElemsArray);
+};
+
 
   return (
     <div className="control-panel">
