@@ -1,0 +1,33 @@
+!.gitkeep
+
+# temporary files
+
+.jsx
+*~
+*.swp
+*.zip
+*.log
+CodeMirror-*
+bootstrap/
+tmp/*
+cpanm
+
+# build products
+
+bin/
+doc/jsx.github.com/*.html
+doc/jsx.github.com/doc/
+doc/jsx.github.com/jsxdoc/
+doc/jsx.github.com/search/searchindex.js
+src/doc.jsx
+src/meta.jsx
+
+# npm-related files
+
+npm-debug.log
+package/
+jsx-*.tgz
+node_modules/
+
+# docs
+try/
