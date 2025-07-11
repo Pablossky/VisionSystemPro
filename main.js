@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const db = require('./src/main/database');
 
-function createWindow () {
+function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 720,
@@ -109,4 +109,52 @@ ipcMain.handle('log-action', async (event, { username, action, details }) => {
   });
 });
 
+ipcMain.handle('add-user', async (event, userData) => {
+  const { username, password, role } = userData;
+  if (!username || !password || !role) {
+    return { success: false, message: 'Wszystkie pola są wymagane' };
+  }
+  return new Promise((resolve, reject) => {
+    db.addUser({ username, password, role }, (err) => {
+      if (err) {
+        if (err.message.includes('UNIQUE constraint failed')) {
+          resolve({ success: false, message: 'Użytkownik już istnieje' });
+        } else {
+          console.error('Błąd dodawania użytkownika:', err);
+          reject(err);
+        }
+      } else {
+        resolve({ success: true });
+      }
+    });
+  });
+});
 
+ipcMain.handle('update-user-role', async (event, { username, newRole }) => {
+  if (!username || !newRole) {
+    return { success: false, message: 'Niepoprawne dane' };
+  }
+  return new Promise((resolve, reject) => {
+    db.updateUserRole(username, newRole, (err) => {
+      if (err) {
+        console.error('Błąd aktualizacji roli:', err);
+        reject(err);
+      } else {
+        resolve({ success: true });
+      }
+    });
+  });
+});
+
+ipcMain.handle('get-all-users', async () => {
+  return new Promise((resolve, reject) => {
+    db.getAllUsers((err, rows) => {
+      if (err) {
+        console.error('Błąd pobierania użytkowników:', err);
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+});

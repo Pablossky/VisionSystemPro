@@ -111,6 +111,21 @@ function getLogs(callback) {
   );
 }
 
+function getAllUsers(callback) {
+  db.all('SELECT id, username, role FROM users', callback);
+}
+
+function addUser({ username, password, role }, callback) {
+  const sql = `INSERT INTO users (username, password, role) VALUES (?, ?, ?)`;
+  db.run(sql, [username, password, role], callback);
+}
+
+function updateUserRole(username, newRole, callback) {
+  const sql = `UPDATE users SET role = ? WHERE username = ?`;
+  db.run(sql, [newRole, username], callback);
+}
+
+
 
 module.exports = {
   getMarker: (number, callback) => {
@@ -141,6 +156,9 @@ module.exports = {
     );
   },
 
+  getAllUsers,
+  addUser,
+  updateUserRole,
   addLog,
   getLogs,
 };

@@ -3,6 +3,8 @@ import ControlPanel from './ControlPanel';
 import LogsWindow from './logsWindow/LogsWindow';
 import MarkerSearch from './MarkerSearch';
 import ContourViewer from './ContourViewer';
+import ScanApproval from './../components/ScanApproval';
+import UserManager from './UserManager';
 import './MainMenu.css';
 
 // Definiujemy dostępne opcje w zależności od roli użytkownika
@@ -13,23 +15,26 @@ const optionsByRole = {
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
+    "Zarządzaj użytkownikami",
     "Wyloguj się",
   ],
-  Service: [
+  service: [
     "Logi",
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
+    "Zarządzaj użytkownikami",
     "Wyloguj się",
   ],
-  Admin: [
+  admin: [
     "Logi",
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
+    "Zarządzaj użytkownikami",
     "Wyloguj się",
   ],
-  Operator: [
+  operator: [
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
@@ -48,12 +53,17 @@ export default function MainMenu({ user, onLogout }) {
     setSelectedOption("Podgląd konturu");
   };
 
+  const handleScanApproval = () => {
+    setScannedElements([]);
+    setSelectedOption(null);
+  };
+
   const options = optionsByRole[user.role] || [];
 
   const handleLogoutClick = async () => {
     try {
       await window.electronAPI.invoke('logout-user', { username: user.username });
-      onLogout(); 
+      onLogout();
     } catch (err) {
       console.error('Błąd podczas wylogowywania:', err);
       alert('Błąd podczas wylogowywania');
@@ -75,7 +85,19 @@ export default function MainMenu({ user, onLogout }) {
       case "Skanuj marker":
         return <ControlPanel onStartScan={handleStartScan} user={user} />;
       case "Podgląd konturu":
-        return <ContourViewer elements={scannedElements} />;
+        return (
+          <>
+            <ContourViewer elements={scannedElements} />
+            <ScanApproval
+              elements={scannedElements}
+              user={user}
+              onDone={handleScanApproval}
+              markerNumber={scannedElements.length > 0 ? scannedElements[0].marker_number : ''}
+            />
+          </>
+        );
+      case "Zarządzaj użytkownikami":
+        return <UserManager />;
       case "Wyloguj się":
         onLogout();
         return null
