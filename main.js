@@ -96,9 +96,9 @@ ipcMain.handle('get-logs', async () => {
   });
 });
 
-ipcMain.handle('log-action', async (event, { username, action, description }) => {
+ipcMain.handle('log-action', async (event, { username, action, details }) => {
   return new Promise((resolve, reject) => {
-    db.addLog(username, action, description, (err) => {
+    db.addLog(username, action, details, (err) => {
       if (err) {
         console.error('Błąd zapisu logu:', err);
         reject(err);
@@ -108,4 +108,5 @@ ipcMain.handle('log-action', async (event, { username, action, description }) =>
     });
   });
 });
+
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import ControlPanel from './ControlPanel';
-import LogsWindow from './LogsWindow';
+import LogsWindow from './logsWindow/LogsWindow';
 import MarkerSearch from './MarkerSearch';
+import ContourViewer from './ContourViewer';
 import './MainMenu.css';
 
 // Definiujemy dostępne opcje w zależności od roli użytkownika
@@ -11,23 +12,27 @@ const optionsByRole = {
     "Logi",
     "Skanuj marker",
     "Wyszukaj marker",
+    "Podgląd konturu",
     "Wyloguj się",
   ],
   Service: [
     "Logi",
     "Skanuj marker",
     "Wyszukaj marker",
+    "Podgląd konturu",
     "Wyloguj się",
   ],
   Admin: [
     "Logi",
     "Skanuj marker",
     "Wyszukaj marker",
+    "Podgląd konturu",
     "Wyloguj się",
   ],
   Operator: [
     "Skanuj marker",
     "Wyszukaj marker",
+    "Podgląd konturu",
     "Wyloguj się"
   ]
 };
@@ -35,9 +40,12 @@ const optionsByRole = {
 export default function MainMenu({ user, onLogout }) {
   const [showLogs, setShowLogs] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [scannedElements, setScannedElements] = useState([]);
 
   const handleStartScan = (elements) => {
     console.log('Start scanning elements:', elements);
+    setScannedElements(elements);
+    setSelectedOption("Podgląd konturu");
   };
 
   const options = optionsByRole[user.role] || [];
@@ -66,6 +74,8 @@ export default function MainMenu({ user, onLogout }) {
         return <LogsWindow onClose={() => setSelectedOption(null)} />;
       case "Skanuj marker":
         return <ControlPanel onStartScan={handleStartScan} user={user} />;
+      case "Podgląd konturu":
+        return <ContourViewer elements={scannedElements} />;
       case "Wyloguj się":
         onLogout();
         return null
