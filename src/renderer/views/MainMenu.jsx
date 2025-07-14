@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ControlPanel from './ControlPanel';
 import LogsWindow from './logsWindow/LogsWindow';
 import MarkerSearch from './MarkerSearch';
 import ContourViewer from './ContourViewer';
 import ScanApproval from './../components/ScanApproval';
+import ElementDetailsPanel from './../components/ElementDetailsPanel';
+import ParameterSettings from './../components/ParameterSettings';
+import ShapeAccuracyCalculator from './../components/ShapeAccuracyCalculator';
 import UserManager from './UserManager';
 import './MainMenu.css';
 
@@ -15,6 +18,7 @@ const optionsByRole = {
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
+    "Zmiana parametrów",
     "Zarządzaj użytkownikami",
     "Wyloguj się",
   ],
@@ -23,6 +27,7 @@ const optionsByRole = {
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
+    "Zmiana parametrów",
     "Zarządzaj użytkownikami",
     "Wyloguj się",
   ],
@@ -31,6 +36,7 @@ const optionsByRole = {
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
+    "Zmiana parametrów",
     "Zarządzaj użytkownikami",
     "Wyloguj się",
   ],
@@ -46,6 +52,32 @@ export default function MainMenu({ user, onLogout }) {
   const [showLogs, setShowLogs] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
   const [scannedElements, setScannedElements] = useState([]);
+  const [elementsWithAccuracy, setElementsWithAccuracy] = useState([]);
+  const [tolerance, setTolerance] = useState(2.0);
+
+  useEffect(() => {
+    async function loadTolerance() {
+      try {
+        const storedTolerance = await window.electronAPI.invoke('get-parameter', 'tolerance');
+        if (storedTolerance !== undefined && storedTolerance !== null) {
+          setTolerance(parseFloat(storedTolerance));
+        }
+      } catch (e) {
+        console.warn('Nie udało się wczytać tolerancji, używam domyślnej');
+      }
+    }
+    loadTolerance();
+  }, []);
+
+  useEffect(() => {
+    const calculator = new ShapeAccuracyCalculator(tolerance);
+    const updatedElements = scannedElements.map(el => ({
+      ...el,
+      accuracy: calculator.calculateAccuracy(el.data),
+    }));
+    setElementsWithAccuracy(updatedElements);
+  }, [scannedElements, tolerance]);
+
 
   const handleStartScan = (elements) => {
     console.log('Start scanning elements:', elements);
@@ -87,7 +119,12 @@ export default function MainMenu({ user, onLogout }) {
       case "Podgląd konturu":
         return (
           <>
-            <ContourViewer elements={scannedElements} />
+            <div style={{ display: 'flex' }}>
+              <div style={{ flex: 1 }}>
+                <ContourViewer elements={elementsWithAccuracy} tolerance={tolerance} />
+              </div>
+              <ElementDetailsPanel elements={elementsWithAccuracy} tolerance={tolerance} />
+            </div>
             <ScanApproval
               elements={scannedElements}
               user={user}
@@ -95,6 +132,14 @@ export default function MainMenu({ user, onLogout }) {
               markerNumber={scannedElements.length > 0 ? scannedElements[0].marker_number : ''}
             />
           </>
+        );
+      case 'Zmiana parametrów':
+        return (
+          <ParameterSettings
+            tolerance={tolerance}
+            onToleranceChange={setTolerance}
+            username={user.username}
+          />
         );
       case "Zarządzaj użytkownikami":
         return <UserManager />;

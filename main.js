@@ -158,3 +158,28 @@ ipcMain.handle('get-all-users', async () => {
     });
   });
 });
+
+
+ipcMain.handle('save-parameter', async (event, { username, parameter, oldValue, newValue }) => {
+  return new Promise((resolve, reject) => {
+    db.saveParameter(parameter, newValue, (err) => {
+      if (err) {
+        console.error('Błąd zapisu parametru:', err);
+        reject(err);
+      } else {
+        // Logujemy zmianę
+        db.addLog(username, 'parameter_change', `Zmiana parametru "${parameter}": z "${oldValue}" na "${newValue}"`);
+        resolve();
+      }
+    });
+  });
+});
+
+ipcMain.handle('get-parameter', async (event, parameter) => {
+  return new Promise((resolve, reject) => {
+    db.getParameter(parameter, (err, row) => {
+      if (err) reject(err);
+      else resolve(row ? row.value : null);
+    });
+  });
+});

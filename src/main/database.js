@@ -25,6 +25,14 @@ db.serialize(() => {
   `);
 
   db.run(`
+  CREATE TABLE IF NOT EXISTS parameters (
+    name TEXT PRIMARY KEY,
+    value TEXT
+  )
+  `);
+
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS elements (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       marker_number TEXT,
@@ -125,6 +133,15 @@ function updateUserRole(username, newRole, callback) {
   db.run(sql, [newRole, username], callback);
 }
 
+function saveParameter(name, value, callback) {
+  const sql = `INSERT INTO parameters (name, value) VALUES (?, ?)
+               ON CONFLICT(name) DO UPDATE SET value=excluded.value`;
+  db.run(sql, [name, value], callback);
+}
+
+function getParameter(name, callback) {
+  db.get('SELECT value FROM parameters WHERE name = ?', [name], callback);
+}
 
 
 module.exports = {
@@ -161,4 +178,6 @@ module.exports = {
   updateUserRole,
   addLog,
   getLogs,
+  saveParameter,
+  getParameter,
 };

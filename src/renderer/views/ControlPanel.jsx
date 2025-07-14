@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Select from 'react-select';
 import markerElements from '../../data/data';
 import ShapeAccuracyCalculator from './../components/ShapeAccuracyCalculator';
 
@@ -7,6 +8,7 @@ export default function ControlPanel({ onStartScan, user }) {
   const [elements, setElements] = useState([]);
   const [selectedElements, setSelectedElements] = useState(new Set());
   const [error, setError] = useState('');
+
 
   // Nowe stany dla zatwierdzenia/odrzucenia
   const [scanConfirmed, setScanConfirmed] = useState(null); // null | 'approved' | 'rejected'
@@ -19,6 +21,11 @@ export default function ControlPanel({ onStartScan, user }) {
     setComment('');
   };
 
+  const markerOptions = Object.keys(markerElements).map((m) => ({
+    value: m,
+    label: `Marker ${m}`
+  }));
+
   const handleLoadElements = () => {
     const markerId = markerNumber.trim();
 
@@ -27,6 +34,7 @@ export default function ControlPanel({ onStartScan, user }) {
       setElements([]);
       return;
     }
+
 
     const elems = markerElements[markerId];
     const calculator = new ShapeAccuracyCalculator(2.0);
@@ -124,13 +132,19 @@ export default function ControlPanel({ onStartScan, user }) {
     <div className="control-panel">
       <h2>Kontrola elementów</h2>
 
-      <input
-        type="text"
-        placeholder="Wpisz numer markera (np. 1)"
-        value={markerNumber}
-        onChange={handleMarkerChange}
+      <Select style={{ color: 'black' }}
+        options={markerOptions}
+        onChange={(selected) => {
+          setMarkerNumber(selected?.value || '');
+          setError('');
+          setScanConfirmed(null);
+          setComment('');
+        }}
+        placeholder="Wybierz marker..."
+        isClearable
       />
       <button onClick={handleLoadElements}>Załaduj elementy</button>
+
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
