@@ -193,6 +193,10 @@ module.exports = {
     );
   },
 
+  getElementById(id, callback) {
+    db.get('SELECT * FROM elements WHERE id = ?', [id], callback);
+  },
+
   getAllUsers,
   addUser,
   updateUserRole,

@@ -140,6 +140,8 @@ export default function LogsWindow({ onClose }) {
             )}
             {filteredLogs.map(log => {
               const isReviewRequest = log.action?.toLowerCase().includes('do sprawdzenia');
+              const isReplayable = log.action?.toLowerCase().includes('skan');
+
               return (
                 <tr
                   key={log.id}
@@ -162,6 +164,23 @@ export default function LogsWindow({ onClose }) {
                     color: isReviewRequest ? '#fff8c6' : 'inherit'
                   }}>
                     {log.details}
+                  </td>
+                  <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                    {isReplayable && (
+                      <button
+                        onClick={() => window.electronAPI.invoke('replay-log', log)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: 4,
+                          border: 'none',
+                          backgroundColor: '#888',
+                          color: 'white',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Sprawdź
+                      </button>
+                    )}
                   </td>
                 </tr>
               );

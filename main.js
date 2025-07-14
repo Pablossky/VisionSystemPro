@@ -2,8 +2,10 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const db = require('./src/main/database');
 
+let mainWindow;
+
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
     webPreferences: {
@@ -13,11 +15,12 @@ function createWindow() {
     }
   });
 
-  win.loadFile(path.join(__dirname, 'dist/index.html'));
+  mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
 }
 
 app.whenReady().then(() => {
   createWindow();
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -26,7 +29,6 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
-
 ipcMain.handle('login-user', async (event, { username, password }) => {
   return new Promise((resolve, reject) => {
     db.getUser(username, password, (err, row) => {
@@ -85,6 +87,16 @@ ipcMain.handle('get-elements-by-marker', async (event, marker_number) => {
     });
   });
 });
+
+ipcMain.handle('get-element-by-id', async (event, id) => {
+  return new Promise((resolve, reject) => {
+    db.getElementById(id, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+});
+
 
 // IPC do pobierania logów
 ipcMain.handle('get-logs', async () => {
@@ -211,3 +223,13 @@ ipcMain.handle('delete-approval-comment', async (e, id) => {
   });
 });
 
+ipcMain.handle('replay-log', async (event, log) => {
+  const match = log.details.match(/Element (\w+)/);
+  if (match && mainWindow) {
+    const elementId = match[1];
+    console.log('Znaleziono elementId:', elementId);
+    mainWindow.webContents.send('preview-element', elementId);
+  } else {
+    console.warn('Nie znaleziono elementu w logu lub brak mainWindow');
+  }
+});

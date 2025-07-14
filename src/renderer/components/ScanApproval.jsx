@@ -50,7 +50,6 @@ export default function ScanApproval({ elements, user, onDone, markerNumber }) {
     }, 1500);
   };
 
-
   return (
     <div style={{ marginTop: 20, borderTop: '1px solid #ccc', paddingTop: 12 }}>
       <h3>Zatwierdź lub odrzuć skan</h3>

@@ -58,6 +58,9 @@ export default function MainMenu({ user, onLogout }) {
   const [scannedElements, setScannedElements] = useState([]);
   const [elementsWithAccuracy, setElementsWithAccuracy] = useState([]);
   const [tolerance, setTolerance] = useState(2.0);
+  const [previewedElement, setPreviewedElement] = useState(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
 
   useEffect(() => {
     async function loadTolerance() {
@@ -72,6 +75,45 @@ export default function MainMenu({ user, onLogout }) {
     }
     loadTolerance();
   }, []);
+
+  useEffect(() => {
+    const listener = async (elementId) => {
+      console.log('🎯 ODEBRANO PREVIEW-ELEMENT DLA ID:', elementId);
+      try {
+        setShowLogs(false);
+        const element = await window.electronAPI.getElementById(elementId);
+        console.log('🧩 Dane elementu z bazy:', element);
+
+        if (element) {
+          const dataObj = typeof element.data === 'string'
+            ? JSON.parse(element.data)
+            : element.data;
+
+          const calculator = new ShapeAccuracyCalculator(tolerance);
+          const withAccuracy = {
+            ...element,
+            data: dataObj,
+            accuracy: calculator.calculateAccuracy(dataObj),
+          };
+
+          console.log('🧠 Element z accuracy:', withAccuracy);
+
+          setScannedElements([withAccuracy]);
+          setElementsWithAccuracy([withAccuracy]);
+          setPreviewedElement([withAccuracy]);
+          setSelectedOption('Podgląd konturu');
+          setIsPreviewing(true);
+
+          console.log('✅ Podgląd elementu ustawiony!');
+        }
+      } catch (e) {
+        console.error('❌ Błąd ładowania elementu:', e);
+      }
+    };
+
+    window.electronAPI.receive('preview-element', listener);
+  }, [tolerance]);
+
 
   useEffect(() => {
     const calculator = new ShapeAccuracyCalculator(tolerance);
@@ -125,16 +167,19 @@ export default function MainMenu({ user, onLogout }) {
           <>
             <div style={{ display: 'flex' }}>
               <div style={{ flex: 1 }}>
-                <ContourViewer elements={elementsWithAccuracy} tolerance={tolerance} />
+                <ContourViewer elements={isPreviewing ? previewedElement : elementsWithAccuracy} tolerance={tolerance} />
               </div>
-              <ElementDetailsPanel elements={elementsWithAccuracy} tolerance={tolerance} />
+              <ElementDetailsPanel elements={isPreviewing ? previewedElement : elementsWithAccuracy} tolerance={tolerance} />
             </div>
-            <ScanApproval
-              elements={scannedElements}
-              user={user}
-              onDone={handleScanApproval}
-              markerNumber={scannedElements.length > 0 ? scannedElements[0].marker_number : ''}
-            />
+
+            {!isPreviewing && (
+              <ScanApproval
+                elements={scannedElements}
+                user={user}
+                onDone={handleScanApproval}
+                markerNumber={scannedElements.length > 0 ? scannedElements[0].marker_number : ''}
+              />
+            )}
           </>
         );
       case 'Zmiana parametrów':
