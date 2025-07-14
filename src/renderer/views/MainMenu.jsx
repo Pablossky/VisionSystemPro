@@ -7,7 +7,8 @@ import ScanApproval from './../components/ScanApproval';
 import ElementDetailsPanel from './../components/ElementDetailsPanel';
 import ParameterSettings from './../components/ParameterSettings';
 import ShapeAccuracyCalculator from './../components/ShapeAccuracyCalculator';
-import UserManager from './UserManager';
+import CommentManager from './../components/CommentManager';
+import UserManager from '../components/UserManager';
 import './MainMenu.css';
 
 // Definiujemy dostępne opcje w zależności od roli użytkownika
@@ -20,6 +21,7 @@ const optionsByRole = {
     "Podgląd konturu",
     "Zmiana parametrów",
     "Zarządzaj użytkownikami",
+    "Zarządzaj komentarzami",
     "Wyloguj się",
   ],
   service: [
@@ -29,6 +31,7 @@ const optionsByRole = {
     "Podgląd konturu",
     "Zmiana parametrów",
     "Zarządzaj użytkownikami",
+    "Zarządzaj komentarzami",
     "Wyloguj się",
   ],
   admin: [
@@ -38,6 +41,7 @@ const optionsByRole = {
     "Podgląd konturu",
     "Zmiana parametrów",
     "Zarządzaj użytkownikami",
+    "Zarządzaj komentarzami",
     "Wyloguj się",
   ],
   operator: [
@@ -143,6 +147,8 @@ export default function MainMenu({ user, onLogout }) {
         );
       case "Zarządzaj użytkownikami":
         return <UserManager />;
+      case "Zarządzaj komentarzami":
+        return <CommentManager />;
       case "Wyloguj się":
         onLogout();
         return null

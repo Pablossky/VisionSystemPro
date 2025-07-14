@@ -138,16 +138,34 @@ export default function LogsWindow({ onClose }) {
             {filteredLogs.length === 0 && !loading && (
               <tr><td colSpan={4} style={{ padding: '12px', textAlign: 'center', color: '#aaa' }}>Brak logów spełniających kryteria</td></tr>
             )}
-            {filteredLogs.map(log => (
-              <tr key={log.id} style={{ borderBottom: '1px solid #444' }}>
-                <td style={{ padding: '6px 8px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
-                  {new Date(log.timestamp).toLocaleString()}
-                </td>
-                <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>{log.user}</td>
-                <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>{log.action}</td>
-                <td style={{ padding: '6px 8px', whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>{log.details}</td>
-              </tr>
-            ))}
+            {filteredLogs.map(log => {
+              const isReviewRequest = log.action?.toLowerCase().includes('do sprawdzenia');
+              return (
+                <tr
+                  key={log.id}
+                  style={{
+                    borderBottom: '1px solid #444',
+                    backgroundColor: isReviewRequest ? '#665500' : 'transparent'
+                  }}
+                >
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                    {new Date(log.timestamp).toLocaleString()}
+                  </td>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>{log.user}</td>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top', fontWeight: isReviewRequest ? 'bold' : 'normal' }}>
+                    {log.action} {isReviewRequest && <span style={{ color: 'yellow' }}>⚠️</span>}
+                  </td>
+                  <td style={{
+                    padding: '6px 8px',
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'monospace',
+                    color: isReviewRequest ? '#fff8c6' : 'inherit'
+                  }}>
+                    {log.details}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

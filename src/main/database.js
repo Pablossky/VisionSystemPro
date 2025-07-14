@@ -31,6 +31,13 @@ db.serialize(() => {
   )
   `);
 
+  db.run(`
+  CREATE TABLE IF NOT EXISTS approval_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT UNIQUE NOT NULL
+  )
+  `);
+
 
   db.run(`
     CREATE TABLE IF NOT EXISTS elements (
@@ -143,6 +150,19 @@ function getParameter(name, callback) {
   db.get('SELECT value FROM parameters WHERE name = ?', [name], callback);
 }
 
+function getApprovalComments(callback) {
+  db.all('SELECT * FROM approval_comments ORDER BY id DESC', callback);
+}
+
+function addApprovalComment(text, callback) {
+  db.run('INSERT OR IGNORE INTO approval_comments (text) VALUES (?)', [text], callback);
+}
+
+function deleteApprovalComment(id, callback) {
+  db.run('DELETE FROM approval_comments WHERE id = ?', [id], callback);
+}
+
+
 
 module.exports = {
   getMarker: (number, callback) => {
@@ -180,4 +200,7 @@ module.exports = {
   getLogs,
   saveParameter,
   getParameter,
+  getApprovalComments,
+  addApprovalComment,
+  deleteApprovalComment,
 };

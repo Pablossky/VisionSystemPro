@@ -32,10 +32,10 @@ ipcMain.handle('login-user', async (event, { username, password }) => {
     db.getUser(username, password, (err, row) => {
       if (err) return reject(err);
       if (!row) {
-        db.addLog(username, 'login_attempt', 'Nieudane logowanie');
+        db.addLog(username, 'Próba logowania', 'Nieudane logowanie');
         return resolve({ success: false, message: 'Invalid credentials' });
       }
-      db.addLog(username, 'login_success', 'Pomyślne logowanie');
+      db.addLog(username, 'Pomyślne logowanie', 'Pomyślne logowanie');
       resolve({ success: true, user: { id: row.id, username: row.username, role: row.role } });
     });
   });
@@ -168,7 +168,7 @@ ipcMain.handle('save-parameter', async (event, { username, parameter, oldValue, 
         reject(err);
       } else {
         // Logujemy zmianę
-        db.addLog(username, 'parameter_change', `Zmiana parametru "${parameter}": z "${oldValue}" na "${newValue}"`);
+        db.addLog(username, 'Zmiana parametru', `Zmiana parametru "${parameter}": z "${oldValue}" na "${newValue}"`);
         resolve();
       }
     });
@@ -183,3 +183,31 @@ ipcMain.handle('get-parameter', async (event, parameter) => {
     });
   });
 });
+
+ipcMain.handle('get-approval-comments', async () => {
+  return new Promise((resolve, reject) => {
+    db.getApprovalComments((err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+});
+
+ipcMain.handle('add-approval-comment', async (e, text) => {
+  return new Promise((resolve, reject) => {
+    db.addApprovalComment(text, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+});
+
+ipcMain.handle('delete-approval-comment', async (e, id) => {
+  return new Promise((resolve, reject) => {
+    db.deleteApprovalComment(id, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+});
+
