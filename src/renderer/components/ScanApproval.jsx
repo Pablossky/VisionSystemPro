@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function ScanApproval({ elements, user, onDone, markerNumber }) {
+export default function ScanApproval({ elements, user, onDone, markerNumber, isVerificationMode = false, originalLogId = null }) {
   const [comment, setComment] = useState('');
   const [scanConfirmed, setScanConfirmed] = useState(null);
   const [predefinedComments, setPredefinedComments] = useState([]);
@@ -21,12 +21,18 @@ export default function ScanApproval({ elements, user, onDone, markerNumber }) {
     return <p>Brak elementów do zatwierdzenia.</p>;
   }
 
-  const handleConfirm = (status) => {
-    const statusText = {
+  const handleConfirm = async (status) => {
+    const actionText = isVerificationMode ? 'Weryfikacja' : {
+      approved: 'Zatwierdzono skan',
+      rejected: 'Odrzucono skan',
+      review: 'Do sprawdzenia skan',
+    }[status];
+
+    const statusLabel = {
       approved: 'Zatwierdzono',
       rejected: 'Odrzucono',
       review: 'Do sprawdzenia',
-    }[status];
+    }[status] || 'Akcja';
 
     const description = elements.map(el => {
       const name = el.element_name || `Element ${el.id}`;
@@ -34,13 +40,21 @@ export default function ScanApproval({ elements, user, onDone, markerNumber }) {
       return `${name}, Accuracy: ${acc}`;
     }).join('\n');
 
-    const logDetails = `Marker: ${markerNumber}\nStatus: ${statusText}\nKomentarz: ${comment || '-'}\n${description}`;
+    const logDetails = `Marker: ${markerNumber}\nStatus: ${statusLabel}\nKomentarz: ${comment || '-'}\n${description}`;
 
-    window.electronAPI.logAction({
-      username: user.username,
-      action: `${statusText} skan`,
-      details: logDetails,
-    });
+    try {
+      const result = await window.electronAPI.logAction({
+        username: user.username,
+        action: actionText,
+        details: logDetails,
+        scanData: JSON.stringify(elements),
+        related_log_id: isVerificationMode ? originalLogId : null,
+      });
+      console.log('Zapisano log o id:', result.id);
+    } catch (e) {
+      alert('Błąd zapisu logu');
+      return;
+    }
 
     setScanConfirmed(status);
     setTimeout(() => {
@@ -51,9 +65,22 @@ export default function ScanApproval({ elements, user, onDone, markerNumber }) {
   };
 
 
+  // Pozostała część bez zmian
+  const statusColors = {
+    approved: 'green',
+    rejected: 'red',
+    review: 'orange',
+  };
+
+  const statusTexts = {
+    approved: 'zatwierdzony',
+    rejected: 'odrzucony',
+    review: 'oznaczony do sprawdzenia',
+  };
+
   return (
     <div style={{ marginTop: 20, borderTop: '1px solid #ccc', paddingTop: 12 }}>
-      <h3>Zatwierdź lub odrzuć skan</h3>
+      <h3>{isVerificationMode ? 'Weryfikacja skanu' : 'Zatwierdź lub odrzuć skan'}</h3>
       <div style={{ display: 'flex', gap: 10 }}>
         <textarea
           placeholder="Dodaj komentarz..."
@@ -111,8 +138,8 @@ export default function ScanApproval({ elements, user, onDone, markerNumber }) {
       </div>
 
       {scanConfirmed && (
-        <p style={{ marginTop: 10, fontWeight: 'bold', color: scanConfirmed === 'zatwierdzono' ? 'green' : 'red' }}>
-          Skan został {scanConfirmed}.
+        <p style={{ marginTop: 10, fontWeight: 'bold', color: statusColors[scanConfirmed] }}>
+          Skan został {statusTexts[scanConfirmed]}.
         </p>
       )}
     </div>

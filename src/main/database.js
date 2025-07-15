@@ -51,12 +51,14 @@ db.serialize(() => {
 
   db.run(`
   CREATE TABLE IF NOT EXISTS logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    user TEXT,
-    action TEXT,
-    details TEXT
-  )
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  username TEXT,
+  action TEXT,
+  details TEXT,
+  scan_data TEXT,
+  related_log_id INTEGER
+)
 `);
 
   // Dodajemy użytkowników tylko jeśli tabela jest pusta
@@ -107,12 +109,11 @@ db.serialize(() => {
 });
 
 
-// Funkcja do dodawania logu
-function addLog(user, action, details = '') {
-  const sql = `INSERT INTO logs (user, action, details) VALUES (?, ?, ?)`;
-  db.run(sql, [user, action, details], (err) => {
-    if (err) {
-      console.error('Błąd zapisu logu:', err);
+function addLog(username, action, details, scanData, related_log_id, callback) {
+  const sql = `INSERT INTO logs (username, action, details, scan_data, related_log_id) VALUES (?, ?, ?, ?, ?)`;
+  db.run(sql, [username, action, details, scanData || null, related_log_id || null], function(err) {
+    if (typeof callback === 'function') {
+      callback(err, this);
     }
   });
 }

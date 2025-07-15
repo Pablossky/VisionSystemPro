@@ -96,14 +96,14 @@ ipcMain.handle('get-logs', async () => {
   });
 });
 
-ipcMain.handle('log-action', async (event, { username, action, details }) => {
+ipcMain.handle('log-action', async (_event, { username, action, details, scanData, related_log_id }) => {
   return new Promise((resolve, reject) => {
-    db.addLog(username, action, details, (err) => {
+    db.addLog(username, action, details, scanData, related_log_id, function(err) {
       if (err) {
         console.error('Błąd zapisu logu:', err);
         reject(err);
       } else {
-        resolve();
+        resolve({ id: this.lastID });
       }
     });
   });

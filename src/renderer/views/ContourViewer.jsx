@@ -20,6 +20,11 @@ export default function ContourViewer({ elements = [], tolerance }) {
     ctx.scale(zoom, zoom);
 
     elements.forEach(({ data }, index) => {
+      if (!data || !data.mainContour || !Array.isArray(data.mainContour.points)) {
+        // Brak danych, pomiń ten element
+        return;
+      }
+
       const color = ['white', 'black', 'blue', 'purple'][index % 4];
       const accuracy = calculator.calculateAccuracy(data);
 

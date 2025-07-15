@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export default function LogsWindow({ onClose }) {
+export default function LogsWindow({ onClose, onReplayScan }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,7 +24,7 @@ export default function LogsWindow({ onClose }) {
   }, []);
 
   const uniqueUsers = useMemo(() => {
-    const users = new Set(logs.map(log => log.user).filter(Boolean));
+    const users = new Set(logs.map(log => log.username).filter(Boolean));
     return Array.from(users);
   }, [logs]);
 
@@ -32,7 +32,7 @@ export default function LogsWindow({ onClose }) {
     let filtered = logs;
 
     if (filterUser) {
-      filtered = filtered.filter(log => log.user?.toLowerCase().includes(filterUser.toLowerCase()));
+      filtered = filtered.filter(log => log.username?.toLowerCase().includes(filterUser.toLowerCase()));
     }
     if (filterAction) {
       filtered = filtered.filter(log => log.action?.toLowerCase().includes(filterAction.toLowerCase()));
@@ -59,7 +59,7 @@ export default function LogsWindow({ onClose }) {
       head: [['Data', 'Użytkownik', 'Akcja', 'Szczegóły']],
       body: filteredLogs.map(log => [
         new Date(log.timestamp).toLocaleString(),
-        log.user || '',
+        log.username || '',
         log.action || '',
         log.details || '',
       ]),
@@ -128,30 +128,51 @@ export default function LogsWindow({ onClose }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', color: 'white' }}>
           <thead style={{ position: 'sticky', top: 0, backgroundColor: '#222' }}>
             <tr>
+              <th style={{ padding: '8px', borderBottom: '1px solid #555' }}>ID logu</th>
+              <th style={{ padding: '8px', borderBottom: '1px solid #555' }}>Related ID</th>
               <th style={{ padding: '8px', borderBottom: '1px solid #555' }}>Data i czas</th>
               <th style={{ padding: '8px', borderBottom: '1px solid #555' }}>Użytkownik</th>
               <th style={{ padding: '8px', borderBottom: '1px solid #555' }}>Akcja</th>
               <th style={{ padding: '8px', borderBottom: '1px solid #555' }}>Szczegóły</th>
+              <th style={{ padding: '8px', borderBottom: '1px solid #555' }}>Weryfikacja</th>
             </tr>
           </thead>
           <tbody>
             {filteredLogs.length === 0 && !loading && (
-              <tr><td colSpan={4} style={{ padding: '12px', textAlign: 'center', color: '#aaa' }}>Brak logów spełniających kryteria</td></tr>
+              <tr><td colSpan={7} style={{ padding: '12px', textAlign: 'center', color: '#aaa' }}>Brak logów spełniających kryteria</td></tr>
             )}
             {filteredLogs.map(log => {
-              const isReviewRequest = log.action?.toLowerCase().includes('do sprawdzenia');
+              const actionLower = log.action?.toLowerCase() || '';
+              const isReviewRequest = actionLower.includes('do sprawdzenia');
+              const isVerificationLog = actionLower.includes('weryfikacja');
+              const isScanRelated = [
+                'skanowanie',
+                'do sprawdzenia skan',
+                'zatwierdzono skan',
+                'odrzucono skan',
+                'weryfikacja'
+              ].some(type => actionLower.includes(type));
+
               return (
                 <tr
                   key={log.id}
                   style={{
                     borderBottom: '1px solid #444',
-                    backgroundColor: isReviewRequest ? '#665500' : 'transparent'
+                    backgroundColor: isVerificationLog ? '#225522' // ciemna zieleń dla logów weryfikacji
+                      : isReviewRequest ? '#665500' // żółto-brązowy dla "do sprawdzenia"
+                        : 'transparent'
                   }}
                 >
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                    {log.id}
+                  </td>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                    {log.related_log_id || '-'}
+                  </td>
                   <td style={{ padding: '6px 8px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
                     {new Date(log.timestamp).toLocaleString()}
                   </td>
-                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>{log.user}</td>
+                  <td style={{ padding: '6px 8px', verticalAlign: 'top' }}>{log.username}</td>
                   <td style={{ padding: '6px 8px', verticalAlign: 'top', fontWeight: isReviewRequest ? 'bold' : 'normal' }}>
                     {log.action} {isReviewRequest && <span style={{ color: 'yellow' }}>⚠️</span>}
                   </td>
@@ -162,6 +183,34 @@ export default function LogsWindow({ onClose }) {
                     color: isReviewRequest ? '#fff8c6' : 'inherit'
                   }}>
                     {log.details}
+                  </td>
+                  <td>
+                    {isScanRelated && (
+                      <button
+                        onClick={() => {
+                          if (log.scan_data) {
+                            try {
+                              const parsed = JSON.parse(log.scan_data);
+                              onReplayScan(parsed, log.details, { isVerificationMode: true, originalLogId: log.id, relatedLogId: log.related_log_id });
+                            } catch (e) {
+                              alert(`Błąd parsowania danych skanu:\n${e.message}`);
+                            }
+                          } else {
+                            alert(`Brak danych skanu.\n\nSzczegóły logu:\n${log.details || '(brak)'}`);
+                          }
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          backgroundColor: log.scan_data ? '#444' : '#222',
+                          color: log.scan_data ? 'white' : '#888',
+                          border: 'none',
+                          borderRadius: 4,
+                          cursor: log.scan_data ? 'pointer' : 'default'
+                        }}
+                      >
+                        Sprawdź
+                      </button>
+                    )}
                   </td>
                 </tr>
               );

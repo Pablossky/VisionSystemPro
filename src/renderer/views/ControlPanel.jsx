@@ -9,7 +9,6 @@ export default function ControlPanel({ onStartScan, user }) {
   const [selectedElements, setSelectedElements] = useState(new Set());
   const [error, setError] = useState('');
 
-
   // Nowe stany dla zatwierdzenia/odrzucenia
   const [scanConfirmed, setScanConfirmed] = useState(null); // null | 'approved' | 'rejected'
   const [comment, setComment] = useState('');
@@ -34,7 +33,6 @@ export default function ControlPanel({ onStartScan, user }) {
       setElements([]);
       return;
     }
-
 
     const elems = markerElements[markerId];
     const calculator = new ShapeAccuracyCalculator(2.0);
@@ -88,7 +86,9 @@ export default function ControlPanel({ onStartScan, user }) {
         window.electronAPI.logAction({
           username: user.username,
           action: 'Skanowanie',
-          details: `Marker: ${markerNumber.trim()}\n${description}`
+          details: `Marker: ${markerNumber.trim()}\n${description}`,
+          // serializujemy dane skanu jako JSON string
+          scanData: JSON.stringify(selectedElemsArray.map(el => el.data))
         });
       } catch (err) {
         console.error('Nie udało się zapisać logu skanowania:', err);
@@ -119,20 +119,16 @@ export default function ControlPanel({ onStartScan, user }) {
       username: user.username,
       action: `${status} skan`,
       details: logDetails,
+      scan_data: JSON.stringify(selectedElemsArray.map(el => el.data))
     });
-
-    // Możesz też tu dodać np. reset formularza po zatwierdzeniu
-    // setSelectedElements(new Set());
-    // setElements([]);
-    // setMarkerNumber('');
-    // setComment('');
   };
 
   return (
     <div className="control-panel">
       <h2>Kontrola elementów</h2>
 
-      <Select style={{ color: 'black' }}
+      <Select
+        style={{ color: 'black' }}
         options={markerOptions}
         onChange={(selected) => {
           setMarkerNumber(selected?.value || '');
@@ -144,7 +140,6 @@ export default function ControlPanel({ onStartScan, user }) {
         isClearable
       />
       <button onClick={handleLoadElements}>Załaduj elementy</button>
-
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 

@@ -1,13 +1,16 @@
+/* Główny panel */
 .main-panel {
   display: flex;
   height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #1e1e2f;
   color: white;
+  overflow: hidden;
 }
 
+/* Lewy panel */
 .left-panel {
-  width: 320px;
+  width: 400px;
   background-color: #292a3a;
   padding: 15px;
   display: flex;
@@ -15,23 +18,22 @@
   gap: 15px;
   box-sizing: border-box;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #6467a3 transparent;
 }
 
-.right-panel {
-  flex-grow: 1;
-  background-color: #222238;
-  padding: 20px;
-  overflow-y: auto;
-}
-
+/* Karty */
 .card {
   background-color: #353656;
   border-radius: 8px;
   padding: 15px;
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
   user-select: none;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Opcje */
 .access-panel {
   padding: 12px;
 }
@@ -52,6 +54,10 @@
   font-weight: 600;
   transition: background-color 0.3s;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
 }
 
 .option-card:hover {
@@ -63,18 +69,97 @@
   font-weight: 700;
 }
 
-.log-card {
-  cursor: pointer;
-  background-color: #2f2f4f;
-  transition: background 0.3s;
-  margin-top: 10px;
-  text-align: center;
-}
-
-.log-card:hover {
-  background-color: #3f3f6f;
-}
-
-.user-info h2, .user-info p {
+/* Info o użytkowniku */
+.user-info h2,
+.user-info p {
   margin: 0 0 6px 0;
+}
+
+/* Środkowy panel z konturem i sidebar */
+.center-panel {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.center-panel-layout {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  overflow: hidden;
+  gap: 20px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Główna część (kontur + zatwierdzanie) */
+.center-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* Kontur */
+.contour-viewer-top {
+  flex: 1;
+  background-color: #1f1f35;
+  border-radius: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  color: white;
+}
+
+/* Zatwierdzanie */
+.scan-approval-bottom {
+  background-color: #2c2c42;
+  border-radius: 8px;
+  padding: 10px;
+  color: white;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Prawy sidebar */
+.right-sidebar-wrapper {
+  width: 400px;
+  max-width: 400px;
+  background-color: #292a3a;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  color: white;
+  border-left: 1px solid #3a3a4a;
+}
+
+.right-sidebar h3 {
+  margin-top: 0;
+}
+
+.right-sidebar ul {
+  padding: 0;
+  list-style: none;
+}
+
+.right-sidebar li {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #353656;
+  border: 1px solid #444567;
+  border-radius: 5px;
+  color: white;
+}
+
+/* Komentarz z logu */
+.right-sidebar .replay-comment {
+  margin-top: 20px;
+  background-color: #1a1a2f;
+  border: 1px solid #3a3a5f;
+  border-radius: 6px;
+  padding: 10px;
+  white-space: pre-wrap;
+  font-family: monospace;
+  color: #88aaff;
 }
