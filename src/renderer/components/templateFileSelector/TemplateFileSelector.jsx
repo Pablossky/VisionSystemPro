@@ -1,34 +1,49 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import Button from 'react-bootstrap/Button';
+import './TemplateFileSelector.css';
 
-export default function TemplateFileSelector({ onSelectElements }) {
+export default function TemplateFileSelector({ onSelectElements, preselectedElementIds = [] }) {
   const [folders, setFolders] = useState([]);
-  const [expandedFolder, setExpandedFolder] = useState('');
   const [folderElements, setFolderElements] = useState({});
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [error, setError] = useState('');
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedKeys, setExpandedKeys] = useState([]);
+  const folderRefs = useRef({});
+
   useEffect(() => {
-    const loadFolders = async () => {
+    (async () => {
       try {
         const fetchedFolders = await window.electronAPI.invoke('get-template-folders');
         setFolders(fetchedFolders);
+
+        const allElementsPromises = fetchedFolders.map(folderName =>
+          window.electronAPI.invoke('get-elements-from-folder', folderName)
+        );
+        const allElementsResults = await Promise.all(allElementsPromises);
+
+        const newFolderElements = {};
+        fetchedFolders.forEach((folder, i) => {
+          newFolderElements[folder] = allElementsResults[i] || [];
+        });
+
+        setFolderElements(newFolderElements);
+
       } catch (err) {
         setError('Nie udało się załadować folderów.');
         console.error(err);
       }
-    };
-    loadFolders();
+    })();
   }, []);
 
-  const toggleFolder = async (folderName) => {
-    if (expandedFolder === folderName) {
-      setExpandedFolder('');
-      return;
+  useEffect(() => {
+    if (preselectedElementIds.length > 0) {
+      setSelectedIds(new Set(preselectedElementIds));
     }
+  }, [preselectedElementIds]);
 
-    setExpandedFolder(folderName);
-    setError('');
-
+  const loadFolderElements = async (folderName) => {
     if (!folderElements[folderName]) {
       try {
         const items = await window.electronAPI.invoke('get-elements-from-folder', folderName);
@@ -58,57 +73,163 @@ export default function TemplateFileSelector({ onSelectElements }) {
     onSelectElements(selected);
   };
 
+  const toggleFolder = (idx) => {
+    const key = idx.toString();
+    if (expandedKeys.includes(key)) {
+      setExpandedKeys(expandedKeys.filter(k => k !== key));
+    } else {
+      setExpandedKeys([...expandedKeys, key]);
+      loadFolderElements(folders[idx]);
+    }
+  };
+
+  const filteredFolders = folders
+    .map((folder, idx) => {
+      const elements = folderElements[folder] || [];
+      const folderMatch = folder.toLowerCase().includes(searchTerm.toLowerCase());
+
+      let filteredElements = elements.filter(({ name, id }) =>
+        (name || `Element ${id}`).toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      if (preselectedElementIds.length > 0) {
+        filteredElements = filteredElements.filter(({ id }) => preselectedElementIds.includes(id));
+      }
+
+      if (folderMatch || filteredElements.length > 0) {
+        return { folder, idx, elements: filteredElements };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  const suggestions = [];
+  if (searchTerm.trim() !== '') {
+    folders.forEach((folder, idx) => {
+      if (folder.toLowerCase().includes(searchTerm.toLowerCase())) {
+        suggestions.push({ type: 'folder', folder, idx });
+      }
+      const elements = folderElements[folder] || [];
+      elements.forEach(({ id, name }) => {
+        if ((name || `Element ${id}`).toLowerCase().includes(searchTerm.toLowerCase())) {
+          suggestions.push({ type: 'element', folder, idx, id, name: name || `Element ${id}` });
+        }
+      });
+    });
+  }
+
+  const onSuggestionClick = (suggestion) => {
+    const key = suggestion.idx.toString();
+    if (!expandedKeys.includes(key)) {
+      setExpandedKeys((prev) => [...prev, key]);
+      loadFolderElements(folders[suggestion.idx]);
+    }
+    setTimeout(() => {
+      if (folderRefs.current[key]) {
+        folderRefs.current[key].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 200);
+  };
+
   return (
-    <div className="p-4 bg-gray-900 text-white rounded shadow-md max-w-md mx-auto">
-      <h2 className="text-xl font-semibold mb-4">Wybierz pliki wzorcowe</h2>
+    <div className="template-selector-container">
+      <h2 className="selector-title">Wybierz pliki wzorcowe</h2>
+      {error && <p className="error-text">{error}</p>}
 
-      {error && <p className="text-red-400 mb-4">{error}</p>}
+      <input
+        type="text"
+        placeholder="Szukaj folderów lub elementów..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="search-input"
+      />
 
-      <div className="space-y-2">
-        {folders.map((folder) => (
-          <div key={folder} className="border border-gray-700 rounded">
-            <button
-              onClick={() => toggleFolder(folder)}
-              className="w-full text-left p-2 bg-gray-800 hover:bg-gray-700 font-semibold"
-            >
-              📁 {folder}
-            </button>
+      {searchTerm.trim() !== '' && suggestions.length > 0 && (
+        <div className="suggestions-wrapper">
+          {suggestions.map((sugg, i) => {
+            const baseClass = sugg.type === 'folder' ? 'suggestion-item folder' : 'suggestion-item element';
+            return (
+              <div
+                key={i}
+                onClick={() => onSuggestionClick(sugg)}
+                className={baseClass}
+                title={sugg.type === 'folder' ? `Folder: ${sugg.folder}` : `Element: ${sugg.name} w folderze ${sugg.folder}`}
+              >
+                {sugg.type === 'folder' ? '📁' : '📄'}{' '}
+                <span>
+                  {sugg.type === 'folder' ? sugg.folder : `${sugg.name} `}
+                  {sugg.type === 'element' && <small className="folder-label">(folder: {sugg.folder})</small>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-            {expandedFolder === folder && (
-              <div className="p-2 bg-gray-800">
-                {folderElements[folder]?.length > 0 ? (
-                  <ul className="space-y-1">
-                    {folderElements[folder].map(({ id, name }) => (
-                      <li key={id}>
-                        <label className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(id)}
-                            onChange={() => toggleSelection(id)}
-                            className="accent-blue-500"
-                          />
-                          <span>{name || `Element ${id}`}</span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-gray-400">Brak elementów w folderze.</p>
+      <div className="accordion-container">
+        {filteredFolders.length > 0 ? (
+          filteredFolders.map(({ folder, idx, elements }) => {
+            const isExpanded = expandedKeys.includes(idx.toString());
+            return (
+              <div
+                key={folder}
+                className={`accordion-item ${isExpanded ? 'expanded' : ''}`}
+                ref={el => { if (el) folderRefs.current[idx.toString()] = el; }}
+              >
+                <div
+                  className="accordion-header"
+                  onClick={() => toggleFolder(idx)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleFolder(idx); }}
+                >
+                  <span className="folder-icon">{isExpanded ? '▼' : '▶'}</span> 📁 {folder}
+                </div>
+                {isExpanded && (
+                  <div className="accordion-body">
+                    {elements.length > 0 ? (
+                      <ul className="accordion-elements-list">
+                        {elements.map(({ id, name }) => (
+                          <li
+                            key={id}
+                            style={{
+                              backgroundColor: preselectedElementIds.includes(id) ? '#5566dd33' : 'transparent',
+                              borderRadius: '6px',
+                              padding: '2px 4px',
+                            }}
+                          >
+                            <label className="accordion-label">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(id)}
+                                onChange={() => toggleSelection(id)}
+                                className="checkbox"
+                              />
+                              <span>{name || `Element ${id}`}</span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="empty-text">Brak elementów w folderze.</p>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        ))}
+            );
+          })
+        ) : (
+          <p className="empty-text">Brak wyników wyszukiwania.</p>
+        )}
       </div>
 
-      {folders.length > 0 && (
-        <button
-          className="mt-4 w-full p-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold"
-          onClick={confirmSelection}
-        >
-          Wybierz elementy
-        </button>
-      )}
+      <Button
+        variant="primary"
+        onClick={confirmSelection}
+        className="select-button"
+      >
+        Wybierz elementy
+      </Button>
     </div>
   );
 }
