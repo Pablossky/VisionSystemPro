@@ -96,7 +96,6 @@ export default function ControlPanel({ onStartScan, user }) {
     }, 0);
   };
 
-  // Funkcja zatwierdzająca lub odrzucająca skan z komentarzem i logiem
   const handleConfirmScan = (approved) => {
     const selectedElemsArray = elements.filter(el => selectedElements.has(el.id));
     if (selectedElemsArray.length === 0) {
@@ -168,37 +167,6 @@ export default function ControlPanel({ onStartScan, user }) {
           </ul>
 
           <button onClick={handleStartScanClick}>START/SCAN</button>
-
-          <div style={{ marginTop: 20 }}>
-            <textarea
-              placeholder="Dodaj komentarz do zatwierdzenia/odrzucenia skanu..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
-            />
-            <div style={{ marginTop: 10, display: 'flex', gap: 10 }}>
-              <button
-                style={{ backgroundColor: 'green', color: 'white', padding: '8px 12px', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-                onClick={() => handleConfirmScan(true)}
-                disabled={scanConfirmed === 'approved'}
-              >
-                Zatwierdź skan
-              </button>
-              <button
-                style={{ backgroundColor: 'red', color: 'white', padding: '8px 12px', border: 'none', borderRadius: 4, cursor: 'pointer' }}
-                onClick={() => handleConfirmScan(false)}
-                disabled={scanConfirmed === 'rejected'}
-              >
-                Odrzuć skan
-              </button>
-            </div>
-            {scanConfirmed && (
-              <p style={{ marginTop: 10, fontWeight: 'bold', color: scanConfirmed === 'approved' ? 'green' : 'red' }}>
-                Skan został {scanConfirmed === 'approved' ? 'zatwierdzony' : 'odrzucony'}.
-              </p>
-            )}
-          </div>
         </>
       )}
     </div>
