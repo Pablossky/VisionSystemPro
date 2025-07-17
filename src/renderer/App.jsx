@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Login from './views/login/Login.jsx';
-import MainMenu from './views/MainMenu';
+import MainMenu from './views/mainMenu/MainMenu';
 
 export default function App() {
   const [user, setUser] = useState(null);

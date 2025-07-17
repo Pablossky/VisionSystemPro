@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const db = require('./src/main/database');
+
+const dataRoot = path.join(__dirname, 'src', 'data');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -211,3 +214,38 @@ ipcMain.handle('delete-approval-comment', async (e, id) => {
   });
 });
 
+ipcMain.handle('get-template-folders', async () => {
+  try {
+    const folders = fs.readdirSync(dataRoot, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+    return folders;
+  } catch (error) {
+    console.error('Błąd przy pobieraniu folderów:', error);
+    return [];
+  }
+});
+
+
+ipcMain.handle('get-elements-from-folder', async (event, folderName) => {
+  const folderPath = path.join(dataRoot, folderName);
+  try {
+    const files = fs.readdirSync(folderPath).filter(file => file.endsWith('.json'));
+    const elements = [];
+
+    for (const file of files) {
+      const fullPath = path.join(folderPath, file);
+      const json = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      elements.push({
+        id: file,
+        name: file.replace('.json', ''),
+        data: json,
+      });
+    }
+
+    return elements;
+  } catch (error) {
+    console.error(`Błąd przy pobieraniu plików z folderu ${folderName}:`, error);
+    return [];
+  }
+});

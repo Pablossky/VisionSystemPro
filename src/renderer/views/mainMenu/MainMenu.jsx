@@ -10,6 +10,7 @@ import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
 import CommentManager from '../../components/CommentManager';
 import UserManager from '../../components/UserManager';
 import RightSidebar from '../../components/RightSideBar';
+import TemplateFileSelector from '../../components/templateFileSelector/TemplateFileSelector';
 import './MainMenu.css';
 
 // Definiujemy dostępne opcje w zależności od roli użytkownika
@@ -166,7 +167,10 @@ export default function MainMenu({ user, onLogout }) {
       case "Logi":
         return <LogsWindow onClose={() => setSelectedOption(null)} />;
       case "Skanuj marker":
-        return <ControlPanel onStartScan={handleStartScan} user={user} />;
+        return (
+        <ControlPanel onStartScan={handleStartScan} user={user} />,
+        <TemplateFileSelector onSelectElements={handleStartScan} />
+        )
       case "Podgląd konturu":
         return (
           <div className="center-panel-layout">
