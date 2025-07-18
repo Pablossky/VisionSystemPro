@@ -88,6 +88,7 @@ export default function MainMenu({ user, onLogout }) {
     setElementsWithAccuracy(updatedElements);
   }, [scannedElements, tolerance]);
 
+
   const handleStartScan = (elements) => {
     console.log('Start scanning elements:', elements);
     setScannedElements(elements);
@@ -103,36 +104,60 @@ export default function MainMenu({ user, onLogout }) {
     setOriginalLogId(null);
   };
 
+
   const handleReplayScan = (scanData, comment = '', { isVerificationMode = false, originalLogId = null } = {}) => {
     if (!scanData) {
       alert('Brak danych skanu do odtworzenia');
       return;
     }
 
-    const safeElements = scanData.map(data => {
-      if (data && data.mainContour && Array.isArray(data.mainContour.points)) {
-        return {
-          data,
-          marker_number: data.marker_number || 'Nieznany',
-        };
-      } else {
-        return {
-          data: {
-            mainContour: data
-          },
-          marker_number: data.marker_number || 'Nieznany',
-        };
+    const safeElements = scanData.map((item, index) => {
+      const data = item.data || item;  // obsługa, jeśli item ma strukturę { data: {...} } lub sam obiekt
+
+      const marker_number = item.marker_number || item.name || `Element ${index + 1}`;
+
+      // Wydobywamy punkty, próbując z mainContour.points
+      let points = [];
+      if (Array.isArray(data)) {
+        points = data;
+      } else if (data?.mainContour?.points) {
+        points = data.mainContour.points;
+      } else if (data?.points) {
+        points = data.points;
+      } else if (Array.isArray(data.mainContour)) {
+        points = data.mainContour;
       }
+
+      const formattedPoints = points.map((pt) => ({
+        position: pt.position || [0, 0],
+        modelPosition: pt.modelPosition || [0, 0],
+        distance: pt.distance || 0,
+      }));
+
+      return {
+        data: {
+          ...data,
+          mainContour: {
+            ...data.mainContour,
+            points: formattedPoints,
+          },
+        },
+        marker_number,
+        accuracy: item.accuracy !== undefined ? item.accuracy : null,
+      };
     });
+
+    console.log("Replay - got safeElements:", safeElements);
 
     setScannedElements(safeElements);
     setReplayComment(comment || '');
     setIsReplay(true);
     setSelectedOption('Podgląd konturu');
-
     setIsVerificationMode(!!isVerificationMode);
     setOriginalLogId(originalLogId);
   };
+
+
 
   const options = optionsByRole[user.role] || [];
 
@@ -168,8 +193,8 @@ export default function MainMenu({ user, onLogout }) {
         return <LogsWindow onClose={() => setSelectedOption(null)} />;
       case "Skanuj marker":
         return (
-        <ControlPanel onStartScan={handleStartScan} user={user} />,
-        <TemplateFileSelector onSelectElements={handleStartScan} />
+          <ControlPanel onStartScan={handleStartScan} user={user} />,
+          <TemplateFileSelector onSelectElements={handleStartScan} />
         )
       case "Podgląd konturu":
         return (
@@ -180,10 +205,10 @@ export default function MainMenu({ user, onLogout }) {
               </div>
               <div className="scan-approval-bottom">
                 <ScanApproval
-                  elements={scannedElements}
+                  elements={elementsWithAccuracy}
                   user={user}
                   onDone={handleScanApproval}
-                  markerNumber={scannedElements.length > 0 ? scannedElements[0].marker_number : ''}
+                  markerNumber={elementsWithAccuracy.length > 0 ? elementsWithAccuracy[0].marker_number : ''}
                   isVerificationMode={isVerificationMode}
                   originalLogId={originalLogId}
                 />

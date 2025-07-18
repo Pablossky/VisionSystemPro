@@ -35,10 +35,11 @@ export default function ScanApproval({ elements, user, onDone, markerNumber, isV
     }[status] || 'Akcja';
 
     const description = elements.map(el => {
-      const name = el.element_name || `Element ${el.id}`;
+      const name = el.marker_number || el.data?.name || `Element ${el.id || ''}`;
       const acc = typeof el.accuracy === 'number' ? `${el.accuracy.toFixed(1)}%` : 'brak danych';
       return `${name}, Accuracy: ${acc}`;
     }).join('\n');
+
 
     const logDetails = `Marker: ${markerNumber}\nStatus: ${statusLabel}\nKomentarz: ${comment || '-'}\n${description}`;
 

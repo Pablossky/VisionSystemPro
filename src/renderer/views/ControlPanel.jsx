@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Select from 'react-select';
 import markerElements from '../../data/data';
 import ShapeAccuracyCalculator from './../components/ShapeAccuracyCalculator';
+import ContourData from './../components/ContourData';
 
 export default function ControlPanel({ onStartScan, user }) {
   const [markerNumber, setMarkerNumber] = useState('');
@@ -71,10 +72,8 @@ export default function ControlPanel({ onStartScan, user }) {
 
     const selectedElemsArray = elements.filter(el => selectedElements.has(el.id));
 
-    // Przekazujemy do MainMenu (np. do ContourViewer)
     onStartScan(selectedElemsArray);
 
-    // Logowanie skanowania
     setTimeout(() => {
       try {
         const description = selectedElemsArray.map(el => {
@@ -87,8 +86,7 @@ export default function ControlPanel({ onStartScan, user }) {
           username: user.username,
           action: 'Skanowanie',
           details: `Marker: ${markerNumber.trim()}\n${description}`,
-          // serializujemy dane skanu jako JSON string
-          scanData: JSON.stringify(selectedElemsArray.map(el => el.data))
+          scanData: JSON.stringify(selectedElemsArray.map(el => new ContourData(el.data).toJSON()))
         });
       } catch (err) {
         console.error('Nie udało się zapisać logu skanowania:', err);
@@ -118,7 +116,7 @@ export default function ControlPanel({ onStartScan, user }) {
       username: user.username,
       action: `${status} skan`,
       details: logDetails,
-      scan_data: JSON.stringify(selectedElemsArray.map(el => el.data))
+      scanData: JSON.stringify(selectedElemsArray.map(el => new ContourData(el.data).toJSON()))
     });
   };
 

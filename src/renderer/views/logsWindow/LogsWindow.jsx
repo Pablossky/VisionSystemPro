@@ -84,7 +84,6 @@ export default function LogsWindow({ onClose, onReplayScan }) {
 
       <h2>Logi systemowe</h2>
 
-      {/* Filtry */}
       <div style={{ marginBottom: 15, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <input
           type="text"
@@ -191,6 +190,7 @@ export default function LogsWindow({ onClose, onReplayScan }) {
                           if (log.scan_data) {
                             try {
                               const parsed = JSON.parse(log.scan_data);
+                              console.log("parsed scan_data:", parsed);
                               onReplayScan(parsed, log.details, { isVerificationMode: true, originalLogId: log.id, relatedLogId: log.related_log_id });
                             } catch (e) {
                               alert(`Błąd parsowania danych skanu:\n${e.message}`);
