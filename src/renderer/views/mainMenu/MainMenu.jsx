@@ -208,7 +208,7 @@ export default function MainMenu({ user, onLogout }) {
                   elements={elementsWithAccuracy}
                   user={user}
                   onDone={handleScanApproval}
-                  markerNumber={elementsWithAccuracy.length > 0 ? elementsWithAccuracy[0].marker_number : ''}
+                  markerNumber={elementsWithAccuracy.length > 0 ? (elementsWithAccuracy[0].marker_number || elementsWithAccuracy[0].data?.name || elementsWithAccuracy[0].data?.element_name || '') : ''}
                   isVerificationMode={isVerificationMode}
                   originalLogId={originalLogId}
                 />

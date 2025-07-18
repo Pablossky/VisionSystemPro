@@ -18,7 +18,14 @@ export default function RightSidebar({ elements, tolerance, replayComment, isRep
                             borderRadius: 5,
                             color: '#222'
                         }}>
-                            <strong>{el.element_name || `Element ${el.id}`}</strong><br />
+                            <strong>
+                                {el.element_name
+                                    || el.marker_number
+                                    || el.data?.name
+                                    || el.data?.element_name
+                                    || `Element ${el.id || ''}`}
+                            </strong>
+                            <br />
                             Zgodność: <strong>{typeof el.accuracy === 'number' ? `${el.accuracy.toFixed(1)}%` : 'brak danych'}</strong><br />
                             Tolerancja: <strong>{tolerance.toFixed(1)} mm</strong>
                         </li>
