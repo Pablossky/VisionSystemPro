@@ -11,6 +11,7 @@ import CommentManager from '../../components/CommentManager';
 import UserManager from '../../components/UserManager';
 import RightSidebar from '../../components/RightSideBar';
 import TemplateFileSelector from '../../components/templateFileSelector/TemplateFileSelector';
+import GoalsPanel from '../goals/GoalsPanel';
 import './MainMenu.css';
 
 // Definiujemy dostępne opcje w zależności od roli użytkownika
@@ -24,6 +25,7 @@ const optionsByRole = {
     "Zmiana parametrów",
     "Zarządzaj użytkownikami",
     "Zarządzaj komentarzami",
+    "Cele skanowania",
     "Wyloguj się",
   ],
   service: [
@@ -34,6 +36,7 @@ const optionsByRole = {
     "Zmiana parametrów",
     "Zarządzaj użytkownikami",
     "Zarządzaj komentarzami",
+    "Cele skanowania",
     "Wyloguj się",
   ],
   admin: [
@@ -44,12 +47,14 @@ const optionsByRole = {
     "Zmiana parametrów",
     "Zarządzaj użytkownikami",
     "Zarządzaj komentarzami",
+    "Cele skanowania",
     "Wyloguj się",
   ],
   operator: [
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
+    "Cele skanowania",
     "Wyloguj się"
   ]
 };
@@ -238,6 +243,8 @@ export default function MainMenu({ user, onLogout }) {
         return <UserManager />;
       case "Zarządzaj komentarzami":
         return <CommentManager />;
+      case "Cele skanowania":
+        return <GoalsPanel logs={[]} />;
       case "Wyloguj się":
         onLogout();
         return null;

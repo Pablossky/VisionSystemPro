@@ -31,10 +31,6 @@
   font-size: 14px;
 }
 
-.login-input::placeholder {
-  color: #ccc;
-}
-
 .log-button {
   width: 100%;
   padding: 10px;
