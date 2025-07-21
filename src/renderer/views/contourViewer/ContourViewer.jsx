@@ -11,69 +11,80 @@ export default function ContourViewer({ elements = [], tolerance }) {
   const calculator = useMemo(() => new ShapeAccuracyCalculator(tolerance), [tolerance]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext('2d');
+  
+  // Zielone tło
+  ctx.fillStyle = '#006400'; // ciemna zieleń
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.save();
-    ctx.translate(offset.x, offset.y);
-    ctx.scale(zoom, zoom);
+  ctx.save();
+  ctx.translate(offset.x, offset.y);
+  ctx.scale(zoom, zoom);
 
-    elements.forEach(({ data }, index) => {
-      if (!data || !data.mainContour || !Array.isArray(data.mainContour.points)) {
-        // Brak danych, pomiń ten element
-        return;
-      }
+  elements.forEach(({ data }, index) => {
+    if (!data || !data.mainContour || !Array.isArray(data.mainContour.points)) return;
 
-      const color = ['white', 'black', 'blue', 'purple'][index % 4];
-      const accuracy = calculator.calculateAccuracy(data);
+    const accuracy = calculator.calculateAccuracy(data);
 
-      // Rysuj model
-      ctx.beginPath();
-      data.mainContour.points.forEach((pt, i) => {
-        const [x, y] = pt.modelPosition;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.closePath();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    const modelPoints = data.mainContour.points.map((pt) => pt.modelPosition);
+    const realPoints = data.mainContour.points.map((pt) => pt.position);
 
-      // Rysuj rzeczywiste punkty
-      ctx.beginPath();
-      data.mainContour.points.forEach((pt, i) => {
-        const [x, y] = pt.position;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.closePath();
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+    // Rysuj obszar tolerancji (biały przezroczysty)
+    ctx.beginPath();
+    modelPoints.forEach(([x, y], i) => {
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; // przezroczysty biały
+    ctx.fill();
 
-      // Punkty poza tolerancją
-      data.mainContour.points.forEach((pt) => {
-        const [x, y] = pt.position;
-        if (Math.abs(pt.distance) > tolerance) {
-          ctx.beginPath();
-          ctx.arc(x, y, 3, 0, 2 * Math.PI);
-          ctx.fillStyle = 'red';
-          ctx.fill();
-        }
-      });
+    // Rysuj obrys modelu z pliku DXF/PLT (biały)
+    ctx.beginPath();
+    modelPoints.forEach(([x, y], i) => {
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-      // Tekst z nową wartością accuracy
-      if (data.mainContour.points.length > 0) {
-        const [x, y] = data.mainContour.points[0].modelPosition;
-        ctx.fillStyle = 'black';
-        ctx.font = '16px Arial';
-        ctx.fillText(`Zgodność: ${accuracy.toFixed(1)}%`, x + 10, y - 10);
+    // Rysuj obrys rzeczywisty (czarny)
+    ctx.beginPath();
+    realPoints.forEach(([x, y], i) => {
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = 'black'; // lub 'blue'
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Punkty poza tolerancją (czerwone kropki)
+    data.mainContour.points.forEach((pt) => {
+      const [x, y] = pt.position;
+      if (Math.abs(pt.distance) > tolerance) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'red';
+        ctx.fill();
       }
     });
 
-    ctx.restore();
-  }, [elements, zoom, offset, tolerance, calculator]);
+    // Wypisz dokładność przy pierwszym punkcie
+    if (modelPoints.length > 0) {
+      const [x, y] = modelPoints[0];
+      ctx.fillStyle = 'white';
+      ctx.font = '16px Arial';
+      ctx.fillText(`Zgodność: ${accuracy.toFixed(1)}%`, x + 10, y - 10);
+    }
+  });
+
+  ctx.restore();
+}, [elements, zoom, offset, tolerance, calculator]);
+
 
 
   const handleWheel = (e) => {

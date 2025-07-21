@@ -28,6 +28,7 @@ export default function LogsWindow({ onClose, onReplayScan }) {
     return Array.from(users);
   }, [logs]);
 
+
   const filteredLogs = useMemo(() => {
     let filtered = logs;
 
@@ -50,6 +51,28 @@ export default function LogsWindow({ onClose, onReplayScan }) {
         : new Date(b.timestamp) - new Date(a.timestamp);
     });
   }, [logs, filterUser, filterAction, filterDate, sortAsc]);
+
+   const actionSummary = useMemo(() => {
+    const summary = {
+      zatwierdzone: 0,
+      odrzucone: 0,
+      doSprawdzenia: 0,
+      weryfikacje: 0,
+    };
+
+    if (!Array.isArray(filteredLogs)) return summary;
+
+    filteredLogs.forEach(log => {
+      const action = log.action?.toLowerCase() || '';
+      if (action.includes('zatwierdzono skan')) summary.zatwierdzone++;
+      else if (action.includes('odrzucono skan')) summary.odrzucone++;
+      else if (action.includes('do sprawdzenia')) summary.doSprawdzenia++;
+      else if (action.includes('weryfikacja')) summary.weryfikacje++;
+    });
+
+    return summary;
+  }, [filteredLogs]);
+
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -83,6 +106,25 @@ export default function LogsWindow({ onClose, onReplayScan }) {
       </div>
 
       <h2>Logi systemowe</h2>
+
+      <div style={{
+        backgroundColor: '#111',
+        border: '1px solid #333',
+        borderRadius: 6,
+        padding: 12,
+        marginBottom: 15,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 16,
+        justifyContent: 'flex-start'
+      }}>
+        <div><strong>📅 Data:</strong> {filterDate || 'Brak wybranej daty'}</div>
+        <div><strong style={{ color: '#4caf50' }}>✔️ Zatwierdzone:</strong> {actionSummary.zatwierdzone}</div>
+        <div><strong style={{ color: '#f44336' }}>❌ Odrzucone:</strong> {actionSummary.odrzucone}</div>
+        <div><strong style={{ color: '#ffeb3b' }}>⚠️ Do sprawdzenia:</strong> {actionSummary.doSprawdzenia}</div>
+        <div><strong style={{ color: '#66bb6a' }}>🧪 Weryfikacje:</strong> {actionSummary.weryfikacje}</div>
+      </div>
+
 
       <div style={{ marginBottom: 15, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <input
