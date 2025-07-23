@@ -69,6 +69,8 @@ export default function MainMenu({ user, onLogout }) {
   const [tolerance, setTolerance] = useState(2.0);
   const [isVerificationMode, setIsVerificationMode] = useState(false);
   const [originalLogId, setOriginalLogId] = useState(null);
+  const [logs, setLogs] = useState([]);
+
 
   useEffect(() => {
     async function loadTolerance() {
@@ -92,6 +94,14 @@ export default function MainMenu({ user, onLogout }) {
     }));
     setElementsWithAccuracy(updatedElements);
   }, [scannedElements, tolerance]);
+
+
+  useEffect(() => {
+    if (selectedOption === "Cele skanowania") {
+      fetchLogs();
+    }
+  }, [selectedOption]);
+
 
 
   const handleStartScan = (elements) => {
@@ -162,6 +172,14 @@ export default function MainMenu({ user, onLogout }) {
     setOriginalLogId(originalLogId);
   };
 
+  const fetchLogs = async () => {
+    try {
+      const data = await window.electronAPI.getLogs();
+      setLogs(data);
+    } catch (error) {
+      console.error("Błąd podczas pobierania logów:", error);
+    }
+  };
 
 
   const options = optionsByRole[user.role] || [];
@@ -244,7 +262,7 @@ export default function MainMenu({ user, onLogout }) {
       case "Zarządzaj komentarzami":
         return <CommentManager />;
       case "Cele skanowania":
-        return <GoalsPanel logs={[]} />;
+        return <GoalsPanel logs={logs} />;
       case "Wyloguj się":
         onLogout();
         return null;
