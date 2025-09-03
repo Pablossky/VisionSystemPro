@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Select from 'react-select';
-import markerElements from '../../data/data';
 import ShapeAccuracyCalculator from './../components/ShapeAccuracyCalculator';
 import ContourData from './../components/ContourData';
+import cvApi from '../../api/CvApiService.ts'; // Twój nowy ICvApi wrapper
+import markerElements from '../../data/data';
 
 export default function ControlPanel({ onStartScan, user }) {
   const [markerNumber, setMarkerNumber] = useState('');
@@ -10,48 +11,48 @@ export default function ControlPanel({ onStartScan, user }) {
   const [selectedElements, setSelectedElements] = useState(new Set());
   const [error, setError] = useState('');
 
-  // Nowe stany dla zatwierdzenia/odrzucenia
   const [scanConfirmed, setScanConfirmed] = useState(null); // null | 'approved' | 'rejected'
   const [comment, setComment] = useState('');
-
-  const handleMarkerChange = (e) => {
-    setMarkerNumber(e.target.value);
-    setError('');
-    setScanConfirmed(null);
-    setComment('');
-  };
 
   const markerOptions = Object.keys(markerElements).map((m) => ({
     value: m,
     label: `Marker ${m}`
   }));
 
-  const handleLoadElements = () => {
-    const markerId = markerNumber.trim();
+  const handleLoadElements = async () => {
+    setError('');
+    setElements([]);
+    setSelectedElements(new Set());
+    setScanConfirmed(null);
+    setComment('');
 
-    if (!markerId) {
-      setError('Proszę wpisać numer markera');
-      setElements([]);
-      return;
-    }
+    try {
+      // 🔹 1. Zrób zdjęcia pomiarowe
+      await cvApi.takeMeasurementPhotos();
 
-    const elems = markerElements[markerId];
-    const calculator = new ShapeAccuracyCalculator(2.0);
+      // 🔹 2. Wykryj elementy
+      await cvApi.detectElements();
 
-    if (elems && elems.length > 0) {
-      const enriched = elems.slice(0, 5).map(el => ({
-        ...el,
-        accuracy: calculator.calculateAccuracy(el.data)
+      // 🔹 3. Pobierz wykryte elementy
+      const { detectedElements } = await cvApi.getDetectedElements();
+      if (!detectedElements || detectedElements.length === 0) {
+        setError('Nie wykryto żadnych elementów dla tego markera');
+        return;
+      }
+
+      // 🔹 4. Mapowanie elementów do lokalnego formatu
+      const calculator = new ShapeAccuracyCalculator(); // jeśli potrzebujesz tolerancji możesz przekazać
+      const enriched = detectedElements.map((el, index) => ({
+        id: index,
+        element_name: el.shapeComparisons[0]?.shape?.name || `Element ${index + 1}`,
+        data: el.elementBox,
+        accuracy: calculator.calculateAccuracy(el.elementBox)
       }));
+
       setElements(enriched);
-      setSelectedElements(new Set());
-      setError('');
-      setScanConfirmed(null);
-      setComment('');
-    } else {
-      setElements([]);
-      setSelectedElements(new Set());
-      setError('Nie znaleziono elementów dla podanego markera');
+    } catch (err) {
+      console.error('Błąd podczas ładowania elementów:', err);
+      setError('Nie udało się pobrać elementów z API');
     }
   };
 
@@ -64,7 +65,7 @@ export default function ControlPanel({ onStartScan, user }) {
     });
   };
 
-  const handleStartScanClick = () => {
+  const handleStartScanClick = async () => {
     if (selectedElements.size === 0) {
       setError('Proszę zaznaczyć przynajmniej jeden element do skanowania');
       return;
@@ -72,52 +73,31 @@ export default function ControlPanel({ onStartScan, user }) {
 
     const selectedElemsArray = elements.filter(el => selectedElements.has(el.id));
 
-    onStartScan(selectedElemsArray);
-
-    setTimeout(() => {
-      try {
-        const description = selectedElemsArray.map(el => {
-          const name = el.element_name || `Element ${el.id}`;
-          const acc = typeof el.accuracy === 'number' ? `${el.accuracy.toFixed(1)}%` : 'brak danych';
-          return `${name}, Accuracy: ${acc}`;
-        }).join('\n');
-
-        window.electronAPI.logAction({
-          username: user.username,
-          action: 'Skanowanie',
-          details: `Marker: ${markerNumber.trim()}\n${description}`,
-          scanData: JSON.stringify(selectedElemsArray.map(el => new ContourData(el.data).toJSON()))
-        });
-      } catch (err) {
-        console.error('Nie udało się zapisać logu skanowania:', err);
+    try {
+      for (const el of selectedElemsArray) {
+        const shapeId = el.element_name; // zakładamy ID modelu kształtu
+        await cvApi.measureElement(el.id, shapeId, 0); // 0 = grubość materiału
+        await cvApi.getMeasuredElement(el.id);
       }
-    }, 0);
-  };
 
-  const handleConfirmScan = (approved) => {
-    const selectedElemsArray = elements.filter(el => selectedElements.has(el.id));
-    if (selectedElemsArray.length === 0) {
-      setError('Brak wybranych elementów do zatwierdzenia');
-      return;
+      onStartScan(selectedElemsArray);
+
+      // Logowanie w Electron
+      const description = selectedElemsArray.map(el => {
+        const acc = typeof el.accuracy === 'number' ? `${el.accuracy.toFixed(1)}%` : 'brak danych';
+        return `${el.element_name}, Accuracy: ${acc}`;
+      }).join('\n');
+
+      window.electronAPI.logAction({
+        username: user.username,
+        action: 'Skanowanie',
+        details: `Marker: ${markerNumber.trim()}\n${description}`,
+        scanData: JSON.stringify(selectedElemsArray.map(el => new ContourData(el.data).toJSON()))
+      });
+    } catch (err) {
+      console.error('Błąd podczas skanowania elementów:', err);
+      setError('Nie udało się wykonać pomiaru elementów');
     }
-
-    const status = approved ? 'Zatwierdzono' : 'Odrzucono';
-    setScanConfirmed(approved ? 'approved' : 'rejected');
-
-    const description = selectedElemsArray.map(el => {
-      const name = el.element_name || `Element ${el.id}`;
-      const acc = typeof el.accuracy === 'number' ? `${el.accuracy.toFixed(1)}%` : 'brak danych';
-      return `${name}, Accuracy: ${acc}`;
-    }).join('\n');
-
-    const logDetails = `Marker: ${markerNumber.trim()}\nStatus: ${status}\nKomentarz: ${comment || '-'}` + `\n${description}`;
-
-    window.electronAPI.logAction({
-      username: user.username,
-      action: `${status} skan`,
-      details: logDetails,
-      scanData: JSON.stringify(selectedElemsArray.map(el => new ContourData(el.data).toJSON()))
-    });
   };
 
   return (
@@ -125,14 +105,8 @@ export default function ControlPanel({ onStartScan, user }) {
       <h2>Kontrola elementów</h2>
 
       <Select
-        style={{ color: 'black' }}
         options={markerOptions}
-        onChange={(selected) => {
-          setMarkerNumber(selected?.value || '');
-          setError('');
-          setScanConfirmed(null);
-          setComment('');
-        }}
+        onChange={(selected) => setMarkerNumber(selected?.value || '')}
         placeholder="Wybierz marker..."
         isClearable
       />
@@ -145,14 +119,14 @@ export default function ControlPanel({ onStartScan, user }) {
           <h3>Elementy do kontroli:</h3>
           <ul>
             {elements.map((el) => (
-              <li key={el.id} style={{ marginBottom: 8 }}>
+              <li key={el.id}>
                 <label>
                   <input
                     type="checkbox"
                     checked={selectedElements.has(el.id)}
                     onChange={() => toggleElementSelection(el.id)}
                   />
-                  {el.element_name || `Element ${el.id}`} –{' '}
+                  {el.element_name} –{' '}
                   <span style={{
                     fontWeight: 'bold',
                     color: el.accuracy >= 95 ? 'green' : el.accuracy >= 80 ? 'orange' : 'red'

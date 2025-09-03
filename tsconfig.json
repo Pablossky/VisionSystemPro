@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ESNext",
+    "jsx": "react",
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
+  },
+  "include": ["src/**/*"],
+}

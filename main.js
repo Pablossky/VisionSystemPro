@@ -2,13 +2,15 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const db = require('./src/main/database');
+const cvApi = require('./src/api/ICvApi.ts'); 
 
 const dataRoot = path.join(__dirname, 'src', 'data');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1280,
-    height: 720,
+    width: 1920,          // początkowa szerokość
+    height: 1080,         // początkowa wysokość
+    fullscreen: true, 
     webPreferences: {
       preload: path.join(__dirname, 'src/preload.js'),
       contextIsolation: true,
@@ -248,4 +250,38 @@ ipcMain.handle('get-elements-from-folder', async (event, folderName) => {
     console.error(`Błąd przy pobieraniu plików z folderu ${folderName}:`, error);
     return [];
   }
+});
+
+//----------------API------------------
+
+ipcMain.handle('take-calibration-photos', async () => {
+  return await cvApi.takeCalibrationPhotos();
+});
+
+ipcMain.handle('get-calibration-info', async () => {
+  return await cvApi.getCalibrationInfo();
+});
+
+ipcMain.handle('take-measurement-photos', async () => {
+  return await cvApi.takeMeasurementPhotos();
+});
+
+ipcMain.handle('detect-elements', async () => {
+  return await cvApi.detectElements();
+});
+
+ipcMain.handle('get-detected-elements', async () => {
+  return await cvApi.getDetectedElements();
+});
+
+ipcMain.handle('measure-element', async (event, { elementI, shapeId, thickness }) => {
+  return await cvApi.measureElement(elementI, shapeId, thickness);
+});
+
+ipcMain.handle('get-measured-element', async (event, { elementI }) => {
+  return await cvApi.getMeasuredElement(elementI);
+});
+
+ipcMain.handle('clear-measurement-data', async () => {
+  return await cvApi.clearMeasurementData();
 });

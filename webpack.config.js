@@ -10,7 +10,7 @@ module.exports = {
     clean: true,
   },
   resolve: {
-    extensions: ['.js', '.jsx'],
+  extensions: ['.js', '.jsx', '.ts', '.tsx'],
   },
   devServer: {
     static: './dist',
@@ -20,9 +20,14 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
+        test: /\.tsx?$/,
+        use: 'ts-loader',
         exclude: /node_modules/,
+      },
+      {
+        test: /\.jsx?$/,
         use: 'babel-loader',
+        exclude: /node_modules/,
       },
       {
         test: /\.css$/,

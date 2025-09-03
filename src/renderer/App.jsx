@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Login from './views/login/Login.jsx';
+import Login from './views/loginPanel/Login.jsx';
 import MainMenu from './views/mainMenu/MainMenu';
 
 export default function App() {

@@ -9,9 +9,10 @@ import ParameterSettings from '../../components/ParameterSettings';
 import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
 import CommentManager from '../../components/CommentManager';
 import UserManager from '../../components/UserManager';
-import RightSidebar from '../../components/RightSideBar';
+import RightSidebar from '../../components/RightSidebar';
 import TemplateFileSelector from '../../components/templateFileSelector/TemplateFileSelector';
 import GoalsPanel from '../goals/GoalsPanel';
+import CalibrationPanel from '../../calibrationPanel/CalibrationPanel';
 import './MainMenu.css';
 
 // Definiujemy dostępne opcje w zależności od roli użytkownika
@@ -26,6 +27,7 @@ const optionsByRole = {
     "Zarządzaj użytkownikami",
     "Zarządzaj komentarzami",
     "Cele skanowania",
+    "Kalibracja",
     "Wyloguj się",
   ],
   service: [
@@ -37,6 +39,7 @@ const optionsByRole = {
     "Zarządzaj użytkownikami",
     "Zarządzaj komentarzami",
     "Cele skanowania",
+    "Kalibracja",
     "Wyloguj się",
   ],
   admin: [
@@ -210,6 +213,12 @@ export default function MainMenu({ user, onLogout }) {
     switch (selectedOption) {
       case "Wyszukaj marker":
         return <MarkerSearch />;
+      case "Kalibracja":
+        return (
+          <CalibrationPanel
+            onClose={() => setSelectedOption(null)}
+          />
+        );
       case "Rozpocznij kontrolę":
       case "Zatwierdź OK/NOK":
       case "Logi":
@@ -273,8 +282,13 @@ export default function MainMenu({ user, onLogout }) {
 
   return (
     <div className="main-panel">
-      {/* Lewy panel */}
+      {/* Lewy panel – obszar roboczy 4:3 */}
       <div className="left-panel">
+        <ContourViewer elements={elementsWithAccuracy} tolerance={tolerance} />
+      </div>
+
+      {/* Prawy panel – menu, opcje i dodatkowe panele */}
+      <div className="right-panel">
         <div className="card user-info">
           <h2>Użytkownik: {user.username}</h2>
           <p>Rola: <strong>{user.role}</strong></p>
@@ -297,12 +311,12 @@ export default function MainMenu({ user, onLogout }) {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Środkowy panel */}
-      <div className="center-panel">
-        {renderRightPanel()}
+        {/* Tutaj dynamicznie wstawiamy dodatkowe panele: logs, kalibracja, scan approval itd. */}
+        <div className="dynamic-panel">
+          {renderRightPanel()}
+        </div>
       </div>
     </div>
-  );
+  )
 }
