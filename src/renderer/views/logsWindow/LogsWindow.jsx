@@ -58,6 +58,9 @@ export default function LogsWindow({ onClose, onReplayScan }) {
       odrzucone: 0,
       doSprawdzenia: 0,
       weryfikacje: 0,
+    
+      zmianaRoli: 0,
+      nowyProfil: 0
     };
 
     if (!Array.isArray(filteredLogs)) return summary;
@@ -68,6 +71,8 @@ export default function LogsWindow({ onClose, onReplayScan }) {
       else if (action.includes('odrzucono skan')) summary.odrzucone++;
       else if (action.includes('do sprawdzenia')) summary.doSprawdzenia++;
       else if (action.includes('weryfikacja')) summary.weryfikacje++;
+      else if (action.includes('zmiana roli')) summary.zmianaRoli++;
+      else if (action.includes('utworzono nowy profil')) summary.nowyProfil++;
     });
 
     return summary;
@@ -123,6 +128,8 @@ export default function LogsWindow({ onClose, onReplayScan }) {
         <div><strong style={{ color: '#f44336' }}>❌ Odrzucone:</strong> {actionSummary.odrzucone}</div>
         <div><strong style={{ color: '#ffeb3b' }}>⚠️ Do sprawdzenia:</strong> {actionSummary.doSprawdzenia}</div>
         <div><strong style={{ color: '#66bb6a' }}>🧪 Weryfikacje:</strong> {actionSummary.weryfikacje}</div>
+        <div><strong style={{ color: '#2196f3' }}>👤 Zmiana roli:</strong> {actionSummary.zmianaRoli}</div>
+        <div><strong style={{ color: '#64ffda' }}>➕ Nowy profil:</strong> {actionSummary.nowyProfil}</div>
       </div>
 
 

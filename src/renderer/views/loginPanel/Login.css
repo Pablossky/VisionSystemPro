@@ -31,6 +31,7 @@
   font-size: 14px;
 }
 
+
 .log-button {
   width: 100%;
   padding: 10px;
@@ -41,6 +42,12 @@
   margin-top: 10px;
   cursor: pointer;
   transition: background 0.3s;
+}
+
+.login-logo {
+  width: 120px;   /* zmieniasz rozmiar SVG */
+  height: auto;
+  margin-bottom: 20px;
 }
 
 .log-button:hover {

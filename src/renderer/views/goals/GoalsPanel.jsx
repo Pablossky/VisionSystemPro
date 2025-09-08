@@ -119,8 +119,9 @@ export default function GoalsPanel({ logs, userRole }) {
       className="main-panel"
       style={{
         maxWidth: 900,
+        borderRadius: 10,
         margin: '0 auto',
-        padding: 20,
+        padding: 10,
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -128,177 +129,156 @@ export default function GoalsPanel({ logs, userRole }) {
       {/* Tytuł panelu */}
       <header
         style={{
-          marginBottom: 30,
-          borderBottom: '2px solid #333',
-          paddingBottom: 10,
+          marginBottom: 15,
+          borderBottom: '1px solid #333',
+          paddingBottom: 5,
           flexShrink: 0,
         }}
       >
-        <h1 style={{ margin: 0 }}>Panel zleceń skanowania</h1>
+        <h2 style={{ margin: 0, fontSize: '1em' }}>Panel zleceń skanowania</h2>
       </header>
 
-      {/* Główna zawartość */}
       <main style={{ flexGrow: 1 }}>
-        {/* Sekcja dodawania zlecenia */}
-        {!isOperator && (
-          <section style={{ marginBottom: 40 }}>
-            {!showAddForm && (
-              <Button onClick={() => setShowAddForm(true)} variant="primary" className="mb-3">
-                Dodaj zlecenie
-              </Button>
-            )}
-            {showAddForm && (
-              <>
-                <TemplateFileSelector
-                  onSelectElements={(selected) => {
-                    if (selected.length > 0) {
-                      const first = selected[0];
-                      setNewGoalId(first.id);
-                      setNewGoalName(first.name);
-                      setError('');
-                    }
-                  }}
-                  preselectedElementIds={newGoalId ? [newGoalId] : []}
-                />
-
-                <Form.Group
-                  as={Row}
-                  className="mt-3"
-                  controlId="goalCount"
-                  style={{ alignItems: 'center' }}
-                >
-                  <Form.Label column sm={4} style={{ fontWeight: '600' }}>
-                    Ilość do zeskanowania
-                  </Form.Label>
-                  <Col sm={4} md={3}>
-                    <Form.Control
-                      type="number"
-                      min="1"
-                      value={newGoalCount}
-                      onChange={(e) => setNewGoalCount(e.target.value)}
-                      placeholder="Liczba"
-                    />
-                  </Col>
-                  <Col sm={4} md={5} style={{ display: 'flex', gap: 10 }}>
-                    <Button variant="success" onClick={addNewGoal}>
-                      Zapisz
-                    </Button>
-                    <Button variant="outline-secondary" onClick={() => setShowAddForm(false)}>
-                      Anuluj
-                    </Button>
-                  </Col>
-                </Form.Group>
-
-                {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
-              </>
-            )}
-            {isOperator && <p>Operatorzy nie mogą dodawać zleceń.</p>}
-          </section>
+        {/* Dodawanie zlecenia */}
+        {!isOperator && !showAddForm && (
+          <Button
+            onClick={() => setShowAddForm(true)}
+            variant="primary"
+            style={{ marginBottom: 10, fontSize: '0.85em', padding: '5px 10px' }}
+          >
+            Dodaj zlecenie
+          </Button>
         )}
 
-        {/* Wrapper z flexem dla dwóch sekcji */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 20,
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-          }}
-        >
+        {showAddForm && !isOperator && (
+          <div style={{ marginBottom: 10 }}>
+            <TemplateFileSelector
+              onSelectElements={(selected) => {
+                if (selected.length > 0) {
+                  const first = selected[0];
+                  setNewGoalId(first.id);
+                  setNewGoalName(first.name);
+                  setError('');
+                }
+              }}
+              preselectedElementIds={newGoalId ? [newGoalId] : []}
+            />
+
+            <Form.Group
+              as={Row}
+              className="mt-2"
+              controlId="goalCount"
+              style={{ alignItems: 'center' }}
+            >
+              <Form.Label column sm={4} style={{ fontWeight: 600, fontSize: '0.85em' }}>
+                Ilość
+              </Form.Label>
+              <Col sm={4} md={3}>
+                <Form.Control
+                  type="number"
+                  min="1"
+                  value={newGoalCount}
+                  onChange={(e) => setNewGoalCount(e.target.value)}
+                  placeholder="Liczba"
+                  style={{ fontSize: '0.85em', padding: '3px 5px' }}
+                />
+              </Col>
+              <Col sm={4} md={5} style={{ display: 'flex', gap: 5 }}>
+                <Button variant="success" onClick={addNewGoal} style={{ fontSize: '0.8em', padding: '3px 8px' }}>
+                  Zapisz
+                </Button>
+                <Button
+                  variant="outline-secondary"
+                  onClick={() => setShowAddForm(false)}
+                  style={{ fontSize: '0.8em', padding: '3px 8px' }}
+                >
+                  Anuluj
+                </Button>
+              </Col>
+            </Form.Group>
+
+            {error && <Alert variant="danger" style={{ marginTop: 5, fontSize: '0.8em' }}>{error}</Alert>}
+          </div>
+        )}
+
+        {isOperator && <p style={{ fontSize: '0.85em' }}>Operatorzy nie mogą dodawać zleceń.</p>}
+
+        {/* Listy zleceń */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {/* Aktualne zlecenia */}
           <section
             style={{
-              flex: 1,
-              maxWidth: '48%',
-              maxHeight: 400,
+              maxHeight: 300,
               overflowY: 'auto',
-              border: '1px solid #ccc',
-              borderRadius: 8,
-              padding: 10,
+              border: '1px solid #444',
+              borderRadius: 6,
+              padding: 5,
             }}
           >
-            <h3>🕒 Aktualne zlecenia</h3>
+            <h4 style={{ margin: '3px 0', fontSize: '0.9em' }}>🕒 Aktualne zlecenia</h4>
             {currentGoals.length === 0 ? (
-              <p>Brak aktualnych zleceń do zrobienia.</p>
+              <p style={{ fontSize: '0.8em' }}>Brak aktualnych zleceń.</p>
             ) : (
               <div
-                className="goal-card-container"
                 style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 15,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                  gap: 5,
                 }}
               >
                 {currentGoals.map(({ id, name, count, done }) => {
                   const remaining = Math.max(count - done, 0);
                   const percent = Math.min(100, Math.round((done / count) * 100));
-
                   return (
                     <div
                       key={id}
-                      className="goal-card"
                       style={{
-                        flex: '1 1 220px',
-                        border: '1px solid #ddd',
-                        borderRadius: 8,
-                        padding: 12,
-                        boxShadow: '0 2px 5px rgb(0 0 0 / 0.1)',
+                        border: '1px solid #555',
+                        borderRadius: 6,
+                        padding: 5,
+                        boxShadow: '0 1px 2px rgb(0 0 0 / 0.1)',
                         display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'space-between',
+                        fontSize: '0.8em',
                       }}
                     >
-                      <div>
-                        <h5 style={{ marginBottom: 6 }}>{name}</h5>
-                        <p style={{ fontWeight: '600', marginBottom: 8 }}>
-                          {done} / {count} zeskanowano
-                        </p>
-
+                      <strong>{name}</strong>
+                      <p style={{ margin: 2 }}>{done} / {count} zeskanowano</p>
+                      <div
+                        style={{
+                          height: 6,
+                          backgroundColor: '#333',
+                          borderRadius: 6,
+                          overflow: 'hidden',
+                          marginBottom: 3,
+                        }}
+                      >
                         <div
-                          className="progress-bar-container"
                           style={{
-                            height: 10,
-                            backgroundColor: '#eee',
-                            borderRadius: 10,
-                            overflow: 'hidden',
-                            marginBottom: 10,
+                            width: `${percent}%`,
+                            backgroundColor: '#2196f3',
+                            height: '100%',
+                            borderRadius: 6,
                           }}
-                        >
-                          <div
-                            className="progress-bar"
-                            style={{
-                              width: `${percent}%`,
-                              backgroundColor: '#2196f3',
-                              height: '100%',
-                              borderRadius: '10px 0 0 10px',
-                              transition: 'width 0.3s ease',
-                            }}
-                          />
-                        </div>
-
-                        <span style={{ color: '#555', fontStyle: 'italic', fontSize: 13 }}>
-                          Pozostało: {remaining}
-                        </span>
+                        />
                       </div>
+                      <span style={{ fontSize: '0.75em', color: '#aaa' }}>Pozostało: {remaining}</span>
 
                       {!isOperator && (
-                        <div
-                          style={{
-                            marginTop: 10,
-                            display: 'flex',
-                            gap: 8,
-                            alignItems: 'center',
-                          }}
-                        >
+                        <div style={{ marginTop: 4, display: 'flex', gap: 3, alignItems: 'center' }}>
                           <Form.Control
                             type="number"
                             min="0"
                             value={count}
                             onChange={(e) => updateGoalCount(id, e.target.value)}
-                            style={{ maxWidth: 70, fontSize: 14 }}
-                            aria-label={`Edytuj ilość celu ${name}`}
+                            style={{ maxWidth: 45, fontSize: '0.75em', padding: '2px 4px' }}
                           />
-                          <Button variant="outline-danger" onClick={() => removeGoal(id)} size="sm">
+                          <Button
+                            variant="outline-danger"
+                            onClick={() => removeGoal(id)}
+                            size="sm"
+                            style={{ fontSize: '0.7em', padding: '2px 5px' }}
+                          >
                             Usuń
                           </Button>
                         </div>
@@ -313,65 +293,65 @@ export default function GoalsPanel({ logs, userRole }) {
           {/* Skończone zadania */}
           <section
             style={{
-              flex: 1,
-              maxWidth: '48%',
-              maxHeight: 400,
+              maxHeight: 300,
               overflowY: 'auto',
-              border: '1px solid #ccc',
-              borderRadius: 8,
-              padding: 10,
+              border: '1px solid #444',
+              borderRadius: 6,
+              padding: 5,
             }}
           >
-            <h3>✔️ Skończone zadania</h3>
+            <h4 style={{ margin: '3px 0', fontSize: '0.9em' }}>✔️ Skończone</h4>
             {finishedGoals.length === 0 ? (
-              <p>Brak zakończonych zadań.</p>
+              <p style={{ fontSize: '0.8em' }}>Brak zakończonych zadań.</p>
             ) : (
-              <div className="goal-card-container" style={{ display: 'flex', flexWrap: 'wrap', gap: 15 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                  gap: 5,
+                }}
+              >
                 {finishedGoals.map(({ id, name, count, done }) => (
                   <div
                     key={id}
-                    className="goal-card"
                     style={{
-                      flex: '1 1 220px',
-                      border: '1px solid #ddd',
-                      borderRadius: 8,
-                      padding: 12,
-                      boxShadow: '0 2px 5px rgb(0 0 0 / 0.1)',
+                      border: '1px solid #555',
+                      borderRadius: 6,
+                      padding: 5,
+                      boxShadow: '0 1px 2px rgb(0 0 0 / 0.1)',
+                      fontSize: '0.8em',
                     }}
                   >
-                    <h5 style={{ marginBottom: 6 }}>{name}</h5>
-                    <p style={{ fontWeight: '600', marginBottom: 8 }}>
-                      {done} / {count} zeskanowano
-                    </p>
-
+                    <strong>{name}</strong>
+                    <p style={{ margin: 2 }}>{done} / {count} zeskanowano</p>
                     <div
-                      className="progress-bar-container"
                       style={{
-                        height: 10,
-                        backgroundColor: '#eee',
-                        borderRadius: 10,
+                        height: 6,
+                        backgroundColor: '#333',
+                        borderRadius: 6,
                         overflow: 'hidden',
-                        marginBottom: 10,
+                        marginBottom: 3,
                       }}
                     >
                       <div
-                        className="progress-bar"
                         style={{
-                          width: `100%`,
+                          width: '100%',
                           backgroundColor: '#4caf50',
                           height: '100%',
-                          borderRadius: 10,
+                          borderRadius: 6,
                         }}
                       />
                     </div>
-
-                    <span style={{ color: '#388e3c', fontWeight: '600', fontSize: 14 }}>
-                      Zadanie zakończone
-                    </span>
+                    <span style={{ fontSize: '0.75em', color: '#4caf50', fontWeight: 600 }}>Zadanie zakończone</span>
 
                     {!isOperator && (
-                      <div style={{ marginTop: 10 }}>
-                        <Button variant="outline-danger" onClick={() => removeGoal(id)} size="sm">
+                      <div style={{ marginTop: 3 }}>
+                        <Button
+                          variant="outline-danger"
+                          onClick={() => removeGoal(id)}
+                          size="sm"
+                          style={{ fontSize: '0.7em', padding: '2px 5px' }}
+                        >
                           Usuń
                         </Button>
                       </div>
@@ -382,6 +362,7 @@ export default function GoalsPanel({ logs, userRole }) {
             )}
           </section>
         </div>
+
       </main>
     </div>
   );

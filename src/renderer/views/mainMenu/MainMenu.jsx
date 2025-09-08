@@ -230,32 +230,23 @@ export default function MainMenu({ user, onLogout }) {
         )
       case "Podgląd konturu":
         return (
-          <div className="center-panel-layout">
-            <div className="center-main-content">
-              <div className="contour-viewer-top">
-                <ContourViewer elements={elementsWithAccuracy} tolerance={tolerance} />
-              </div>
-              <div className="scan-approval-bottom">
-                <ScanApproval
-                  elements={elementsWithAccuracy}
-                  user={user}
-                  onDone={handleScanApproval}
-                  markerNumber={elementsWithAccuracy.length > 0 ? (elementsWithAccuracy[0].marker_number || elementsWithAccuracy[0].data?.name || elementsWithAccuracy[0].data?.element_name || '') : ''}
-                  isVerificationMode={isVerificationMode}
-                  originalLogId={originalLogId}
-                />
-              </div>
-            </div>
-            <div className="right-sidebar-wrapper">
-              <RightSidebar
+          <div className="dynamic-panel">
+            
+
+            {/* Dolna część – ScanApproval / opcje po wybraniu */}
+            <div className="panel-bottom">
+              <ScanApproval
                 elements={elementsWithAccuracy}
-                tolerance={tolerance}
-                replayComment={replayComment}
-                isReplay={isReplay}
+                user={user}
+                onDone={handleScanApproval}
+                markerNumber={elementsWithAccuracy.length > 0 ? (elementsWithAccuracy[0].marker_number || elementsWithAccuracy[0].data?.name || elementsWithAccuracy[0].data?.element_name || '') : ''}
+                isVerificationMode={isVerificationMode}
+                originalLogId={originalLogId}
               />
             </div>
           </div>
         );
+
       case 'Zmiana parametrów':
         return (
           <div className="RightSidePanel" style={{ padding: 20 }}>
@@ -276,19 +267,21 @@ export default function MainMenu({ user, onLogout }) {
         onLogout();
         return null;
       default:
-        return <div style={{ padding: 20 }}><h2>Wybierz opcję z lewej strony</h2></div>;
+        return null;
     }
   };
 
-  return (
-    <div className="main-panel">
-      {/* Lewy panel – obszar roboczy 4:3 */}
-      <div className="left-panel">
-        <ContourViewer elements={elementsWithAccuracy} tolerance={tolerance} />
-      </div>
+return (
+  <div className="main-panel">
+    {/* Lewy panel – obszar roboczy 4:3 */}
+    <div className="left-panel">
+      <ContourViewer elements={elementsWithAccuracy} tolerance={tolerance} />
+    </div>
 
-      {/* Prawy panel – menu, opcje i dodatkowe panele */}
-      <div className="right-panel">
+    {/* Prawy panel – menu, opcje i dodatkowe panele */}
+    <div className="right-panel">
+      {/* Górna część – info o użytkowniku i dostępne opcje */}
+      <div className="right-panel-top">
         <div className="card user-info">
           <h2>Użytkownik: {user.username}</h2>
           <p>Rola: <strong>{user.role}</strong></p>
@@ -311,12 +304,15 @@ export default function MainMenu({ user, onLogout }) {
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Tutaj dynamicznie wstawiamy dodatkowe panele: logs, kalibracja, scan approval itd. */}
-        <div className="dynamic-panel">
+      {/* Dolna część – dynamiczne panele po wybraniu opcji */}
+      {selectedOption && (
+        <div className="right-panel-bottom">
           {renderRightPanel()}
         </div>
-      </div>
+      )}
     </div>
-  )
+  </div>
+);
 }

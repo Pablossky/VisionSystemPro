@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './Login.css';
+import Logo from './../../../assets/LOGO.png';
+
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -39,6 +41,7 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="login-wrapper">
+      <img src={Logo} alt="Logo" style={{ width: '600px', height: 'auto', paddingRight: '10%' }} />
       <div className="login-panel card">
         <h2>Panel logowania</h2>
 

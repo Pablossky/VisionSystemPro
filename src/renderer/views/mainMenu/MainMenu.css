@@ -1,22 +1,29 @@
+/* Resetowanie marginesów i paddingu */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden; /* brak scrolla dla całej aplikacji */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #1e1e2f;
+  color: white;
 }
 
+/* Panel główny */
 .main-panel {
   display: flex;
   height: 100vh;
   width: 100vw;
   background-color: #1e1e2f;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: white;
+  padding: 0px;
+  border-radius: 0; /* brak zaokrągleń */
 }
 
+/* Lewy panel */
 .left-panel {
   flex: 0 0 auto;
+  height: 100%;
   background-color: #1f1f35;
   display: flex;
   flex-direction: column;
@@ -26,27 +33,106 @@ html, body {
   max-height: 100%;
   min-width: 400px;
   border-right: 1px solid #3a3a4a;
-  padding: 10px;
   box-sizing: border-box;
-  overflow: hidden; /* brak scrolla */
+  overflow: hidden;
+  border-radius: 0; /* brak zaokrągleń */
 }
 
+/* Prawy panel */
 .right-panel {
   flex: 1;
   display: flex;
+  padding:20px;
   flex-direction: column;
-  padding: 15px;
   box-sizing: border-box;
   background-color: #292a3a;
-  overflow: hidden; /* sam panel główny bez scrolla */
+  overflow: hidden;
 }
+
+/* Górna część – panel z kartami i info o użytkowniku */
+.right-panel-top {
+  flex: 0 0 auto; /* wysokość dopasowana do zawartości */
+  margin-bottom: 10px;
+  overflow-y: auto;
+}
+
+/* Dolna część – dynamiczne panele po wybraniu opcji */
+.right-panel-bottom {
+  flex: 1; /* zajmuje resztę dostępnej wysokości */
+  overflow: auto; /* scroll jeśli zawartość za duża */
+}
+
+/* Scrollbar dla prawego panelu dolnego */
+.right-panel-bottom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.right-panel-bottom::-webkit-scrollbar-thumb {
+  background-color: #6467a3;
+  border-radius: 4px;
+}
+
+/* Dynamiczny panel pojawiający się po wybraniu opcji */
+.dynamic-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* wypełnia cały przydzielony kontener */
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+/* Wewnętrzny podział dynamicznego panelu na połowę */
+.dynamic-panel .panel-top,
+.dynamic-panel .panel-bottom {
+  flex: 1; /* każda połowa zajmuje 50% */
+  overflow: auto; /* scroll jeśli zawartość większa niż połowa */
+  margin-bottom: 5px; /* opcjonalny odstęp między panelami */
+}
+
+.dynamic-panel .panel-bottom {
+  margin-bottom: 0; /* usuń margin dla ostatniego panelu */
+}
+
+
+/* Access panel - ograniczona wysokość 40% */
+.access-panel {
+  flex: 0 0 40%; /* dokładnie 40% wysokości prawego panelu */
+  overflow-y: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Kontener kart w access panel */
+.access-panel .options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* 2-3 karty w rzędzie */
+  gap: 10px;
+}
+
+/* Karty w access panel */
+.card.option-card {
+  background-color: #353656;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%; /* wypełnia grid cell */
+  box-sizing: border-box;
+}
+
 
 /* Panel z kartami, który może przewijać */
 .access-panel-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* każda karta min. 150px, maksymalnie dzieli wolne miejsce */
+  gap: 10px; /* odstęp między kartami w pionie i poziomie */
   flex: 1; /* zajmuje pozostałą wysokość */
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #6467a3 transparent;
+  padding-right: 5px;
 }
 
 /* Webkit scrollbars dla Chrome/Edge/Safari */
@@ -54,18 +140,42 @@ html, body {
   width: 8px;
 }
 
-.access-panel-cards::-webkit-scrollbar-thumb {
-  background-color: #6467a3;
-  border-radius: 4px;
-}
 
 /* Karty w panelach */
 .card {
   background-color: #353656;
-  border-radius: 8px;
+  border-radius: 8px; /* delikatne zaokrąglenie */
   padding: 15px;
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
   margin-bottom: 10px;
   max-width: 100%;
   box-sizing: border-box;
+}
+/* Przykładowe przyciski i małe elementy z zaokrągleniem */
+button, .small-panel {
+  border-radius: 6px;
+  background-color: #46466e;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+button:hover, .small-panel:hover {
+  background-color: #5a5ab0;
+  transform: scale(1.05);
+}
+
+/* Nagłówki i tekst */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  padding: 0;
+  color: white;
+}
+
+p {
+  margin: 0;
+  padding: 0;
+  color: #ccc;
 }
