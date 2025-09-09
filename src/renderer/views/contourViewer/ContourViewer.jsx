@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
 
-export default function ContourViewer({ elements = [], tolerance }) {
+export default function ContourViewer({ elements = [], tolerance, lineWidthModel, lineWidthReal, outlierPointSize }) {
   const canvasRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -11,80 +11,69 @@ export default function ContourViewer({ elements = [], tolerance }) {
   const calculator = useMemo(() => new ShapeAccuracyCalculator(tolerance), [tolerance]);
 
   useEffect(() => {
-  const canvas = canvasRef.current;
-  const ctx = canvas.getContext('2d');
-  
-  // Zielone tło
-  ctx.fillStyle = '#006400'; // ciemna zieleń
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
 
-  ctx.save();
-  ctx.translate(offset.x, offset.y);
-  ctx.scale(zoom, zoom);
+    // Zielone tło
+    ctx.fillStyle = '#006400'; // ciemna zieleń
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  elements.forEach(({ data }, index) => {
-    if (!data || !data.mainContour || !Array.isArray(data.mainContour.points)) return;
+    ctx.save();
+    ctx.translate(offset.x, offset.y);
+    ctx.scale(zoom, zoom);
 
-    const accuracy = calculator.calculateAccuracy(data);
+    elements.forEach(({ data }) => {
+      if (!data?.mainContour?.points) return;
 
-    const modelPoints = data.mainContour.points.map((pt) => pt.modelPosition);
-    const realPoints = data.mainContour.points.map((pt) => pt.position);
+      const accuracy = calculator.calculateAccuracy(data);
+      const modelPoints = data.mainContour.points.map((pt) => pt.modelPosition);
+      const realPoints = data.mainContour.points.map((pt) => pt.position);
 
-    // Rysuj obszar tolerancji (biały przezroczysty)
-    ctx.beginPath();
-    modelPoints.forEach(([x, y], i) => {
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.2)'; // przezroczysty biały
-    ctx.fill();
+      // Obszar tolerancji
+      ctx.beginPath();
+      modelPoints.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fill();
 
-    // Rysuj obrys modelu z pliku DXF/PLT (biały)
-    ctx.beginPath();
-    modelPoints.forEach(([x, y], i) => {
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.closePath();
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+      // Obrys modelu
+      ctx.beginPath();
+      modelPoints.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+      ctx.closePath();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = lineWidthModel; 
+      ctx.stroke();
 
-    // Rysuj obrys rzeczywisty (czarny)
-    ctx.beginPath();
-    realPoints.forEach(([x, y], i) => {
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.closePath();
-    ctx.strokeStyle = 'black'; // lub 'blue'
-    ctx.lineWidth = 2;
-    ctx.stroke();
+      // Obrys rzeczywisty
+      ctx.beginPath();
+      realPoints.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+      ctx.closePath();
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = lineWidthReal; 
+      ctx.stroke();
 
-    // Punkty poza tolerancją (czerwone kropki)
-    data.mainContour.points.forEach((pt) => {
-      const [x, y] = pt.position;
-      if (Math.abs(pt.distance) > tolerance) {
-        ctx.beginPath();
-        ctx.arc(x, y, 4, 0, 2 * Math.PI);
-        ctx.fillStyle = 'red';
-        ctx.fill();
+      // Punkty poza tolerancją
+      data.mainContour.points.forEach((pt) => {
+        const [x, y] = pt.position;
+        if (Math.abs(pt.distance) > tolerance) {
+          ctx.beginPath();
+          ctx.arc(x, y, outlierPointSize, 0, 2 * Math.PI); 
+          ctx.fillStyle = 'red';
+          ctx.fill();
+        }
+      });
+
+      // Tekst zgodności
+      if (modelPoints.length > 0) {
+        const [x, y] = modelPoints[0];
+        ctx.fillStyle = 'white';
+        ctx.font = '16px Arial';
+        ctx.fillText(`Zgodność: ${accuracy.toFixed(1)}%`, x + 10, y - 10);
       }
     });
 
-    // Wypisz dokładność przy pierwszym punkcie
-    if (modelPoints.length > 0) {
-      const [x, y] = modelPoints[0];
-      ctx.fillStyle = 'white';
-      ctx.font = '16px Arial';
-      ctx.fillText(`Zgodność: ${accuracy.toFixed(1)}%`, x + 10, y - 10);
-    }
-  });
-
-  ctx.restore();
-}, [elements, zoom, offset, tolerance, calculator]);
-
+    ctx.restore();
+  }, [elements, zoom, offset, tolerance, calculator, lineWidthModel, lineWidthReal, outlierPointSize]);
 
 
   const handleWheel = (e) => {

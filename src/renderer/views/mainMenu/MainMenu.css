@@ -10,6 +10,9 @@ html, body {
   color: white;
 }
 
+
+
+
 /* Panel główny */
 .main-panel {
   display: flex;
@@ -178,4 +181,17 @@ p {
   margin: 0;
   padding: 0;
   color: #ccc;
+}
+
+.logo-container {
+  position: fixed;  /* zamiast absolute, żeby było nad całą aplikacją */
+  top: 10px;
+  left: 10px;
+  z-index: 9999; /* musi być większe niż panele */
+  pointer-events: none; /* żeby kliknięcia przechodziły do paneli */
+}
+
+.app-logo {
+  height: 30px;
+  width: auto;
 }

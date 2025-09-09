@@ -5,15 +5,17 @@ import MarkerSearch from '../../components/MarkerSearch';
 import ContourViewer from '../contourViewer/ContourViewer';
 import ScanApproval from '../../components/ScanApproval';
 import ElementDetailsPanel from '../../components/ElementDetailsPanel';
-import ParameterSettings from '../../components/ParameterSettings';
+import ParameterSettings from '../parameterPanel/ParameterSettings';
 import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
 import CommentManager from '../../components/CommentManager';
 import UserManager from '../../components/UserManager';
 import RightSidebar from '../../components/RightSidebar';
 import TemplateFileSelector from '../../components/templateFileSelector/TemplateFileSelector';
 import GoalsPanel from '../goals/GoalsPanel';
-import CalibrationPanel from '../../calibrationPanel/CalibrationPanel';
+import CalibrationPanel from '../calibrationPanel/CalibrationPanel';
 import './MainMenu.css';
+
+import logo from '../../../assets/LOGO.png';
 
 // Definiujemy dostępne opcje w zależności od roli użytkownika
 
@@ -73,6 +75,10 @@ export default function MainMenu({ user, onLogout }) {
   const [isVerificationMode, setIsVerificationMode] = useState(false);
   const [originalLogId, setOriginalLogId] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [lineWidthModel, setLineWidthModel] = useState(1);
+  const [lineWidthReal, setLineWidthReal] = useState(1);
+  const [outlierPointSize, setOutlierPointSize] = useState(4); // domyślny rozmiar czerwonych punktów
+
 
 
   useEffect(() => {
@@ -231,7 +237,7 @@ export default function MainMenu({ user, onLogout }) {
       case "Podgląd konturu":
         return (
           <div className="dynamic-panel">
-            
+
 
             {/* Dolna część – ScanApproval / opcje po wybraniu */}
             <div className="panel-bottom">
@@ -254,6 +260,12 @@ export default function MainMenu({ user, onLogout }) {
               tolerance={tolerance}
               onToleranceChange={setTolerance}
               username={user.username}
+              lineWidthModel={lineWidthModel}
+              lineWidthReal={lineWidthReal}
+              onLineWidthModelChange={setLineWidthModel} // ✔ musisz dodać
+              onLineWidthRealChange={setLineWidthReal}   // ✔ musisz dodać
+              outlierPointSize={outlierPointSize}
+              onOutlierPointSizeChange={setOutlierPointSize}
             />
           </div>
         );
@@ -271,48 +283,57 @@ export default function MainMenu({ user, onLogout }) {
     }
   };
 
-return (
-  <div className="main-panel">
-    {/* Lewy panel – obszar roboczy 4:3 */}
-    <div className="left-panel">
-      <ContourViewer elements={elementsWithAccuracy} tolerance={tolerance} />
-    </div>
-
-    {/* Prawy panel – menu, opcje i dodatkowe panele */}
-    <div className="right-panel">
-      {/* Górna część – info o użytkowniku i dostępne opcje */}
-      <div className="right-panel-top">
-        <div className="card user-info">
-          <h2>Użytkownik: {user.username}</h2>
-          <p>Rola: <strong>{user.role}</strong></p>
-        </div>
-
-        <div className="card access-panel">
-          <h3>Dostępne opcje</h3>
-          <div className="options-grid">
-            {options.map((opt) => (
-              <div
-                key={opt}
-                className={`card option-card ${selectedOption === opt ? 'selected' : ''}`}
-                onClick={() => {
-                  setSelectedOption(opt);
-                  setShowLogs(false);
-                }}
-              >
-                {opt}
-              </div>
-            ))}
-          </div>
-        </div>
+  return (
+    <div className="main-panel">
+      <div className="logo-container">
+        <img src={logo} alt="Logo" className="app-logo" />
+      </div>
+      {/* Lewy panel – obszar roboczy 4:3 */}
+      <div className="left-panel">
+        <ContourViewer
+          elements={elementsWithAccuracy}
+          tolerance={tolerance}
+          lineWidthModel={lineWidthModel}
+          lineWidthReal={lineWidthReal}
+          outlierPointSize={outlierPointSize}
+        />
       </div>
 
-      {/* Dolna część – dynamiczne panele po wybraniu opcji */}
-      {selectedOption && (
-        <div className="right-panel-bottom">
-          {renderRightPanel()}
+      {/* Prawy panel – menu, opcje i dodatkowe panele */}
+      <div className="right-panel">
+        {/* Górna część – info o użytkowniku i dostępne opcje */}
+        <div className="right-panel-top">
+          <div className="card user-info">
+            <h2>Użytkownik: {user.username}</h2>
+            <p>Rola: <strong>{user.role}</strong></p>
+          </div>
+
+          <div className="card access-panel">
+            <h3>Dostępne opcje</h3>
+            <div className="options-grid">
+              {options.map((opt) => (
+                <div
+                  key={opt}
+                  className={`card option-card ${selectedOption === opt ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedOption(opt);
+                    setShowLogs(false);
+                  }}
+                >
+                  {opt}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Dolna część – dynamiczne panele po wybraniu opcji */}
+        {selectedOption && (
+          <div className="right-panel-bottom">
+            {renderRightPanel()}
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 }

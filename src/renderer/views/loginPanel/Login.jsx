@@ -39,65 +39,69 @@ export default function Login({ onLogin }) {
     setError('');
   };
 
-  return (
-    <div className="login-wrapper">
-      <img src={Logo} alt="Logo" style={{ width: '600px', height: 'auto', paddingRight: '10%' }} />
-      <div className="login-panel card">
-        <h2>Panel logowania</h2>
-
-        <div className="mode-switcher">
-          <button
-            className={mode === 'password' ? 'active' : ''}
-            onClick={() => { setMode('password'); setError(''); }}
-          >
-            Login i hasło
-          </button>
-          <button
-            className={mode === 'qr' ? 'active' : ''}
-            onClick={() => { setMode('qr'); setError(''); }}
-          >
-            Logowanie QR
-          </button>
-        </div>
-
-        <form onSubmit={handleLogin}>
-          {mode === 'password' && (
-            <>
-              <input
-                type="text"
-                placeholder="Login"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="login-input"
-              />
-              <input
-                type="password"
-                placeholder="Hasło"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="login-input"
-              />
-            </>
-          )}
-
-          {mode === 'qr' && (
-            <div className="qr-login">
-              <p>Kliknij przycisk, aby zasymulować skanowanie kodu QR</p>
-              <button type="button" onClick={simulateQrScan} className="qr-scan-button">
-                Skanuj kod QR
-              </button>
-              {qrCode && <p className="qr-code-text">Zeskanowany kod: {qrCode}</p>}
-            </div>
-          )}
-
-          <button type="submit" className="log-button">
-            Zaloguj się
-          </button>
-          {error && <p className="error-text">{error}</p>}
-        </form>
-      </div>
+return (
+  <div className="login-wrapper">
+    <div className="login-header">
+      <img src={Logo} alt="Logo" className="login-logo" />
+      <h1 className="login-title">Vision System - Pro</h1>
     </div>
-  );
+
+    <div className="login-panel card">
+      <h2>Panel logowania</h2>
+
+      <div className="mode-switcher">
+        <button
+          className={mode === 'password' ? 'active' : ''}
+          onClick={() => { setMode('password'); setError(''); }}
+        >
+          Login i hasło
+        </button>
+        <button
+          className={mode === 'qr' ? 'active' : ''}
+          onClick={() => { setMode('qr'); setError(''); }}
+        >
+          Logowanie QR
+        </button>
+      </div>
+
+      <form onSubmit={handleLogin}>
+        {mode === 'password' && (
+          <>
+            <input
+              type="text"
+              placeholder="Login"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="login-input"
+            />
+            <input
+              type="password"
+              placeholder="Hasło"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="login-input"
+            />
+          </>
+        )}
+
+        {mode === 'qr' && (
+          <div className="qr-login">
+            <p>Kliknij przycisk, aby zasymulować skanowanie kodu QR</p>
+            <button type="button" onClick={simulateQrScan} className="qr-scan-button">
+              Skanuj kod QR
+            </button>
+            {qrCode && <p className="qr-code-text">Zeskanowany kod: {qrCode}</p>}
+          </div>
+        )}
+
+        <button type="submit" className="log-button">
+          Zaloguj się
+        </button>
+        {error && <p className="error-text">{error}</p>}
+      </form>
+    </div>
+  </div>
+);
 }
