@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAllUsers: () => ipcRenderer.invoke('get-all-users'),
   addUser: (data) => ipcRenderer.invoke('add-user', data),
   updateUserRole: (data) => ipcRenderer.invoke('update-user-role', data),
+  savePDF: (buffer, defaultName) => ipcRenderer.invoke('save-pdf', buffer, defaultName),
 });

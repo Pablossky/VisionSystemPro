@@ -4,6 +4,7 @@ export default function ScanApproval({ elements, user, onDone, markerNumber, isV
   const [comment, setComment] = useState('');
   const [scanConfirmed, setScanConfirmed] = useState(null);
   const [predefinedComments, setPredefinedComments] = useState([]);
+  
 
   useEffect(() => {
     async function fetchComments() {

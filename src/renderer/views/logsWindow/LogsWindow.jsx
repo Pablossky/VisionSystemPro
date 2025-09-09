@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { robotoNormal } from "./Roboto-Regular.js";
+import { robotoBold } from "./Roboto-Bold.js";
+
 
 export default function LogsWindow({ onClose, onReplayScan }) {
   const [logs, setLogs] = useState([]);
@@ -52,13 +55,13 @@ export default function LogsWindow({ onClose, onReplayScan }) {
     });
   }, [logs, filterUser, filterAction, filterDate, sortAsc]);
 
-   const actionSummary = useMemo(() => {
+  const actionSummary = useMemo(() => {
     const summary = {
       zatwierdzone: 0,
       odrzucone: 0,
       doSprawdzenia: 0,
       weryfikacje: 0,
-    
+
       zmianaRoli: 0,
       nowyProfil: 0
     };
@@ -79,9 +82,19 @@ export default function LogsWindow({ onClose, onReplayScan }) {
   }, [filteredLogs]);
 
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     const doc = new jsPDF();
+
+    // Dodanie czcionek (już w Base64)
+    doc.addFileToVFS("Roboto-Regular.ttf", robotoNormal);
+    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+    doc.addFileToVFS("Roboto-Bold.ttf", robotoBold);
+    doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+
+    doc.setFont("Roboto", "normal");
+    doc.setFontSize(12);
     doc.text("Raport logów systemowych", 14, 14);
+
     autoTable(doc, {
       startY: 20,
       head: [['Data', 'Użytkownik', 'Akcja', 'Szczegóły']],
@@ -89,12 +102,17 @@ export default function LogsWindow({ onClose, onReplayScan }) {
         new Date(log.timestamp).toLocaleString(),
         log.username || '',
         log.action || '',
-        log.details || '',
+        log.details || ''
       ]),
-      styles: { fontSize: 8, cellPadding: 2 },
+      styles: { font: 'Roboto', fontSize: 8, cellPadding: 2 },
       headStyles: { fillColor: [40, 40, 40] },
     });
-    doc.save(`logi_${filterDate || 'wszystkie'}.pdf`);
+
+    const pdfBase64 = doc.output('datauristring').split(',')[1];
+    const result = await window.electronAPI.savePDF(pdfBase64, `logi_${filterDate || 'wszystkie'}.pdf`);
+
+    if (result.success) alert(`PDF zapisano w: ${result.path}`);
+    else alert(`Nie udało się zapisać PDF: ${result.error}`);
   };
 
   return (
@@ -103,10 +121,19 @@ export default function LogsWindow({ onClose, onReplayScan }) {
       backgroundColor: 'rgba(0,0,0,0.8)', color: 'white',
       padding: 20, zIndex: 1000, display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-        <button onClick={onClose} style={{ padding: '6px 12px' }}>Zamknij</button>
-        <button onClick={generatePDF} style={{ padding: '6px 12px', backgroundColor: '#222', color: 'white' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 10 }}>
+        <button
+          onClick={generatePDF}
+          style={{ padding: '6px 12px', backgroundColor: '#222', color: 'white' }}
+        >
           Generuj PDF
+        </button>
+
+        <button
+          onClick={onClose}
+          style={{ padding: '6px 12px' }}
+        >
+          Zamknij
         </button>
       </div>
 
