@@ -1,6 +1,6 @@
-import { CalibrationInfo, DetectedElement, ElementMeasurement, ICvApi, MeasurementInfo, ObjectBox, Shape, ShapeDescription } from "../api/ICvApi";
-import el1Result from "../api/el1-result.json"
-import shapes from "../api/shapes.json"
+import { CalibrationInfo, DetectedElement, ElementMeasurement, ICvApi, MeasurementInfo, ObjectBox, Shape, ShapeDescription } from "./ICvApi";
+import el1Result from "./el1-result.json"
+import shapes from "./shapes.json"
 
 export class CvApiSimulator implements ICvApi {
 

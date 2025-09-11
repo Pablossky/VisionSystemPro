@@ -2,8 +2,6 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const db = require('./src/main/database');
-const cvApi = require('./src/api/ICvApi.ts');
-
 const dataRoot = path.join(__dirname, 'src', 'data');
 
 function createWindow() {
@@ -226,17 +224,26 @@ ipcMain.handle('get-elements-from-folder', async (event, folderName) => {
 });
 
 // ------------------ API CV ------------------
+const { CvApiSimulator } = require('./src/api/dist/CvApiSimulator.js');
+const cvApi = new CvApiSimulator();
 
 ipcMain.handle('take-calibration-photos', async () => cvApi.takeCalibrationPhotos());
 ipcMain.handle('get-calibration-info', async () => cvApi.getCalibrationInfo());
 ipcMain.handle('take-measurement-photos', async () => cvApi.takeMeasurementPhotos());
 ipcMain.handle('detect-elements', async () => cvApi.detectElements());
 ipcMain.handle('get-detected-elements', async () => cvApi.getDetectedElements());
-ipcMain.handle('measure-element', async (event, { elementI, shapeId, thickness }) =>
-  cvApi.measureElement(elementI, shapeId, thickness)
-);
-ipcMain.handle('get-measured-element', async (event, { elementI }) => cvApi.getMeasuredElement(elementI));
+
+ipcMain.handle('measure-element', async (_event, { elementI, shapeId, thickness }) => {
+  return cvApi.measureElement(elementI, shapeId, thickness);
+});
+
+ipcMain.handle('get-measured-element', async (_event, { elementI }) => {
+  return cvApi.getMeasuredElement(elementI);
+});
+
 ipcMain.handle('clear-measurement-data', async () => cvApi.clearMeasurementData());
+ipcMain.handle('list-shapes', async () => cvApi.listShapes());
+ipcMain.handle('read-shape', async (_event, { id }) => cvApi.readShape(id));
 
 // ------------------ Zapis PDF ------------------
 

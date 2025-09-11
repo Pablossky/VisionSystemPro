@@ -10,12 +10,11 @@ export default function CalibrationPanel({ onClose }) {
     setError('');
     setIsCalibrating(true);
     setCalibrationInfo(null);
-
     try {
       const canvas = document.getElementById('calibration-canvas');
       if (canvas) {
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#222'; // ciemne tło zamiast bieli
+        ctx.fillStyle = '#222';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'white';
         ctx.font = '48px Arial';
@@ -23,9 +22,10 @@ export default function CalibrationPanel({ onClose }) {
         ctx.fillText('Kalibracja...', canvas.width / 2, canvas.height / 2);
       }
 
+      // 🔄 Wołanie do Electron API
       await window.electronAPI.takeCalibrationPhotos();
-
       const info = await window.electronAPI.getCalibrationInfo();
+
       setCalibrationInfo(info.calibrationInfo || null);
     } catch (err) {
       console.error('Błąd podczas kalibracji:', err);
@@ -34,6 +34,7 @@ export default function CalibrationPanel({ onClose }) {
       setIsCalibrating(false);
     }
   };
+
 
   return (
     <div className="calibration-overlay">
