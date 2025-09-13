@@ -26,6 +26,7 @@ const optionsByRole = {
     "Wyszukaj marker",
     "Podgląd konturu",
     "Zmiana parametrów",
+    "Tolerancja",
     "Zarządzaj użytkownikami",
     "Zarządzaj komentarzami",
     "Cele skanowania",
@@ -38,6 +39,7 @@ const optionsByRole = {
     "Wyszukaj marker",
     "Podgląd konturu",
     "Zmiana parametrów",
+    "Tolerancja",
     "Zarządzaj użytkownikami",
     "Zarządzaj komentarzami",
     "Cele skanowania",
@@ -50,6 +52,7 @@ const optionsByRole = {
     "Wyszukaj marker",
     "Podgląd konturu",
     "Zmiana parametrów",
+    "Tolerancja",
     "Zarządzaj użytkownikami",
     "Zarządzaj komentarzami",
     "Cele skanowania",
@@ -59,6 +62,7 @@ const optionsByRole = {
     "Skanuj marker",
     "Wyszukaj marker",
     "Podgląd konturu",
+    "Tolerancja",
     "Cele skanowania",
     "Wyloguj się"
   ]

@@ -29,27 +29,37 @@ export default function ContourViewer({ elements = [], tolerance, lineWidthModel
       const modelPoints = data.mainContour.points.map((pt) => pt.modelPosition);
       const realPoints = data.mainContour.points.map((pt) => pt.position);
 
-      // Obszar tolerancji
+      // --- Obszar tolerancji wokół linii modelu ---
       ctx.beginPath();
-      modelPoints.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+      modelPoints.forEach(([x, y], i) =>
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+      );
       ctx.closePath();
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.fill();
-
-      // Obrys modelu
-      ctx.beginPath();
-      modelPoints.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
-      ctx.closePath();
-      ctx.strokeStyle = 'white';
-      ctx.lineWidth = lineWidthModel; 
+      ctx.lineWidth = lineWidthModel + 2 * tolerance; // szeroki pas tolerancji
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // półprzezroczysty biały
       ctx.stroke();
+
+      // --- Obrys modelu ---
+      ctx.beginPath();
+      modelPoints.forEach(([x, y], i) =>
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+      );
+      ctx.closePath();
+      ctx.lineWidth = lineWidthModel;
+      ctx.strokeStyle = 'white';
+      ctx.stroke();
+
+
 
       // Obrys rzeczywisty
       ctx.beginPath();
-      realPoints.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
+      realPoints.forEach(([x, y], i) =>
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+      );
       ctx.closePath();
       ctx.strokeStyle = 'black';
-      ctx.lineWidth = lineWidthReal; 
+      ctx.lineWidth = lineWidthReal;
       ctx.stroke();
 
       // Punkty poza tolerancją
@@ -57,11 +67,54 @@ export default function ContourViewer({ elements = [], tolerance, lineWidthModel
         const [x, y] = pt.position;
         if (Math.abs(pt.distance) > tolerance) {
           ctx.beginPath();
-          ctx.arc(x, y, outlierPointSize, 0, 2 * Math.PI); 
+          ctx.arc(x, y, outlierPointSize, 0, 2 * Math.PI);
           ctx.fillStyle = 'red';
           ctx.fill();
         }
       });
+
+      // --- WYRÓŻNIENIE V-CUTÓW ---
+      if (data.vcuts) {
+        data.vcuts.forEach((vcut) => {
+          if (!vcut.found) return;
+
+          const startIdx = vcut.startPointIdx;
+          const endIdx = vcut.endPointIdx;
+          const highestIdx = vcut.highestDepthIdx;
+
+          const vcutPoints = data.mainContour.points
+            .slice(startIdx, endIdx + 1)
+            .map(pt => pt.position);
+
+          // Narysuj linię w innym kolorze
+          ctx.beginPath();
+          vcutPoints.forEach(([x, y], i) =>
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+          );
+          ctx.strokeStyle = 'yellow';
+          ctx.lineWidth = lineWidthReal * 2;
+          ctx.stroke();
+
+          // Punkt największej głębokości
+          if (highestIdx !== undefined && data.mainContour.points[highestIdx]) {
+            const [hx, hy] = data.mainContour.points[highestIdx].position;
+            ctx.beginPath();
+            ctx.arc(hx, hy, outlierPointSize * 1.5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+          }
+
+          // Podpis wartości
+          ctx.fillStyle = 'yellow';
+          ctx.font = '14px Arial';
+          ctx.fillText(
+            `V-cut depth=${vcut.depth.toFixed(2)} w=${vcut.width.toFixed(2)}`,
+            vcutPoints[0][0] + 5,
+            vcutPoints[0][1] - 5
+          );
+        });
+      }
+      // --- KONIEC V-CUTÓW ---
 
       // Tekst zgodności
       if (modelPoints.length > 0) {
