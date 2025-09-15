@@ -13,6 +13,7 @@ import RightSidebar from '../../components/RightSidebar';
 import TemplateFileSelector from '../../components/templateFileSelector/TemplateFileSelector';
 import GoalsPanel from '../goals/GoalsPanel';
 import CalibrationPanel from '../calibrationPanel/CalibrationPanel';
+import ToleranceSettings from '../tolerancePanel/ToleranceSettings';
 import './MainMenu.css';
 
 import logo from '../../../assets/LOGO.png';
@@ -82,6 +83,12 @@ export default function MainMenu({ user, onLogout }) {
   const [lineWidthModel, setLineWidthModel] = useState(1);
   const [lineWidthReal, setLineWidthReal] = useState(1);
   const [outlierPointSize, setOutlierPointSize] = useState(4); // domyślny rozmiar czerwonych punktów
+  const [tolerances, setTolerances] = useState({
+    Points: { value: 2.0, color: '#ffffff' },
+    Vcuts: { value: 2.0, color: '#00ff00' },
+    Additional: { value: 1.0, color: '#0000ff' },
+  });
+
 
 
 
@@ -273,6 +280,16 @@ export default function MainMenu({ user, onLogout }) {
             />
           </div>
         );
+      case "Tolerancja":
+        return (
+          <div className="RightSidePanel" style={{ padding: 20 }}>
+            <ToleranceSettings
+              initialTolerances={tolerances}
+              onSave={setTolerances}
+              username={user.username}
+            />
+          </div>
+        );
       case "Zarządzaj użytkownikami":
         return <UserManager />;
       case "Zarządzaj komentarzami":
@@ -296,7 +313,7 @@ export default function MainMenu({ user, onLogout }) {
       <div className="left-panel">
         <ContourViewer
           elements={elementsWithAccuracy}
-          tolerance={tolerance}
+          tolerances={tolerances}
           lineWidthModel={lineWidthModel}
           lineWidthReal={lineWidthReal}
           outlierPointSize={outlierPointSize}

@@ -1,21 +1,31 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
 
-export default function ContourViewer({ elements = [], tolerance, lineWidthModel, lineWidthReal, outlierPointSize }) {
+export default function ContourViewer({
+  elements = [],
+  tolerances, // <-- teraz obiekt: { Points: { value, color }, Vcuts: {...}, Additional: {...} }
+  lineWidthModel,
+  lineWidthReal,
+  outlierPointSize
+}) {
   const canvasRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
 
-  const calculator = useMemo(() => new ShapeAccuracyCalculator(tolerance), [tolerance]);
+  // kalkulator tylko dla głównych punktów
+  const calculator = useMemo(
+    () => new ShapeAccuracyCalculator(tolerances.Points.value),
+    [tolerances.Points.value]
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    // Zielone tło
-    ctx.fillStyle = '#006400'; // ciemna zieleń
+    // tło
+    ctx.fillStyle = '#006400';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
@@ -23,130 +33,183 @@ export default function ContourViewer({ elements = [], tolerance, lineWidthModel
     ctx.scale(zoom, zoom);
 
     elements.forEach(({ data }) => {
-      if (!data?.mainContour?.points) return;
+      if (!data) return;
 
-      const accuracy = calculator.calculateAccuracy(data);
-      const modelPoints = data.mainContour.points.map((pt) => pt.modelPosition);
-      const realPoints = data.mainContour.points.map((pt) => pt.position);
+      // -----------------------
+      // 1) GŁÓWNY KONTUR (Points)
+      // -----------------------
+      if (data.mainContour?.points) {
+        const modelPoints = data.mainContour.points.map(pt => pt.modelPosition);
+        const realPoints = data.mainContour.points.map(pt => pt.position);
+        const accuracy = calculator.calculateAccuracy(data);
 
-      // --- Obszar tolerancji wokół linii modelu ---
-      ctx.beginPath();
-      modelPoints.forEach(([x, y], i) =>
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-      );
-      ctx.closePath();
-      ctx.lineWidth = lineWidthModel + 2 * tolerance; // szeroki pas tolerancji
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // półprzezroczysty biały
-      ctx.stroke();
+        // pas tolerancji
+        ctx.beginPath();
+        modelPoints.forEach(([x, y], i) =>
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+        );
+        ctx.closePath();
+        ctx.lineWidth = lineWidthModel + 2 * tolerances.Points.value;
+        ctx.strokeStyle = tolerances.Points.color + '66'; // półprzezroczysty
+        ctx.stroke();
 
-      // --- Obrys modelu ---
-      ctx.beginPath();
-      modelPoints.forEach(([x, y], i) =>
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-      );
-      ctx.closePath();
-      ctx.lineWidth = lineWidthModel;
-      ctx.strokeStyle = 'white';
-      ctx.stroke();
+        // obrys modelu
+        ctx.beginPath();
+        modelPoints.forEach(([x, y], i) =>
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+        );
+        ctx.closePath();
+        ctx.lineWidth = lineWidthModel;
+        ctx.strokeStyle = tolerances.Points.color;
+        ctx.stroke();
 
+        // obrys rzeczywisty
+        ctx.beginPath();
+        realPoints.forEach(([x, y], i) =>
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+        );
+        ctx.closePath();
+        ctx.lineWidth = lineWidthReal;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
 
+        // punkty poza tolerancją
+        data.mainContour.points.forEach(pt => {
+          const [x, y] = pt.position;
+          if (Math.abs(pt.distance) > tolerances.Points.value) {
+            ctx.beginPath();
+            ctx.arc(x, y, outlierPointSize, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+          }
+        });
 
-      // Obrys rzeczywisty
-      ctx.beginPath();
-      realPoints.forEach(([x, y], i) =>
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-      );
-      ctx.closePath();
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = lineWidthReal;
-      ctx.stroke();
-
-      // Punkty poza tolerancją
-      data.mainContour.points.forEach((pt) => {
-        const [x, y] = pt.position;
-        if (Math.abs(pt.distance) > tolerance) {
-          ctx.beginPath();
-          ctx.arc(x, y, outlierPointSize, 0, 2 * Math.PI);
-          ctx.fillStyle = 'red';
-          ctx.fill();
+        // podpis zgodności
+        if (modelPoints.length > 0) {
+          const [x, y] = modelPoints[0];
+          ctx.fillStyle = 'white';
+          ctx.font = '16px Arial';
+          ctx.fillText(`Zgodność: ${accuracy.toFixed(1)}%`, x + 10, y - 10);
         }
-      });
+      }
 
-      // --- WYRÓŻNIENIE V-CUTÓW ---
+      // -----------------------
+      // 2) V-CUTS
+      // -----------------------
       if (data.vcuts) {
-        data.vcuts.forEach((vcut) => {
+        data.vcuts.forEach(vcut => {
           if (!vcut.found) return;
 
-          const startIdx = vcut.startPointIdx;
-          const endIdx = vcut.endPointIdx;
-          const highestIdx = vcut.highestDepthIdx;
+          const pts = data.mainContour.points.slice(vcut.startPointIdx, vcut.endPointIdx + 1);
 
-          const vcutPoints = data.mainContour.points
-            .slice(startIdx, endIdx + 1)
-            .map(pt => pt.position);
-
-          // Narysuj linię w innym kolorze
           ctx.beginPath();
-          vcutPoints.forEach(([x, y], i) =>
-            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+          pts.forEach((pt, i) =>
+            i === 0 ? ctx.moveTo(pt.position[0], pt.position[1]) : ctx.lineTo(pt.position[0], pt.position[1])
           );
-          ctx.strokeStyle = 'yellow';
           ctx.lineWidth = lineWidthReal * 2;
+          ctx.strokeStyle = tolerances.Vcuts.color;
           ctx.stroke();
 
-          // Punkt największej głębokości
-          if (highestIdx !== undefined && data.mainContour.points[highestIdx]) {
-            const [hx, hy] = data.mainContour.points[highestIdx].position;
+          // punkt największej głębokości
+          if (vcut.highestDepthIdx !== undefined && data.mainContour.points[vcut.highestDepthIdx]) {
+            const [hx, hy] = data.mainContour.points[vcut.highestDepthIdx].position;
             ctx.beginPath();
             ctx.arc(hx, hy, outlierPointSize * 1.5, 0, 2 * Math.PI);
-            ctx.fillStyle = 'blue';
+            ctx.fillStyle = tolerances.Vcuts.color;
             ctx.fill();
           }
 
-          // Podpis wartości
-          ctx.fillStyle = 'yellow';
+          // podpis wartości
+          const startPos = pts[0]?.position || [0, 0];
+          ctx.fillStyle = tolerances.Vcuts.color;
           ctx.font = '14px Arial';
           ctx.fillText(
-            `V-cut depth=${vcut.depth.toFixed(2)} w=${vcut.width.toFixed(2)}`,
-            vcutPoints[0][0] + 5,
-            vcutPoints[0][1] - 5
+            `depth=${vcut.depth.toFixed(2)} w=${vcut.width.toFixed(2)}`,
+            startPos[0] + 5,
+            startPos[1] - 5
           );
+
+          // sprawdzanie czy poza tolerancją (np. szerokość > tolerance)
+          if (Math.abs(vcut.depth) > tolerances.Vcuts.value) {
+            ctx.beginPath();
+            ctx.arc(startPos[0], startPos[1], outlierPointSize, 0, 2 * Math.PI);
+            ctx.fillStyle = 'orange';
+            ctx.fill();
+          }
         });
       }
-      // --- KONIEC V-CUTÓW ---
 
-      // Tekst zgodności
-      if (modelPoints.length > 0) {
-        const [x, y] = modelPoints[0];
-        ctx.fillStyle = 'white';
-        ctx.font = '16px Arial';
-        ctx.fillText(`Zgodność: ${accuracy.toFixed(1)}%`, x + 10, y - 10);
+      // -----------------------
+      // 3) DODATKOWE KONTURY
+      // -----------------------
+      if (data.additionalContours) {
+        data.additionalContours.forEach(contour => {
+          const modelPts = contour.points.map(pt => pt.modelPosition);
+          const realPts = contour.points.map(pt => pt.position);
+
+          // pas tolerancji
+          ctx.beginPath();
+          modelPts.forEach(([x, y], i) =>
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+          );
+          ctx.closePath();
+          ctx.lineWidth = lineWidthModel + 2 * tolerances.Additional.value;
+          ctx.strokeStyle = tolerances.Additional.color + '66';
+          ctx.stroke();
+
+          // obrys modelu
+          ctx.beginPath();
+          modelPts.forEach(([x, y], i) =>
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+          );
+          ctx.closePath();
+          ctx.lineWidth = lineWidthModel;
+          ctx.strokeStyle = tolerances.Additional.color;
+          ctx.stroke();
+
+          // obrys rzeczywisty
+          ctx.beginPath();
+          realPts.forEach(([x, y], i) =>
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+          );
+          ctx.closePath();
+          ctx.lineWidth = lineWidthReal;
+          ctx.strokeStyle = 'black';
+          ctx.stroke();
+
+          // punkty poza tolerancją
+          contour.points.forEach(pt => {
+            const [x, y] = pt.position;
+            if (Math.abs(pt.distance) > tolerances.Additional.value) {
+              ctx.beginPath();
+              ctx.arc(x, y, outlierPointSize, 0, 2 * Math.PI);
+              ctx.fillStyle = 'red';
+              ctx.fill();
+            }
+          });
+        });
       }
     });
 
     ctx.restore();
-  }, [elements, zoom, offset, tolerance, calculator, lineWidthModel, lineWidthReal, outlierPointSize]);
+  }, [elements, zoom, offset, tolerances, calculator, lineWidthModel, lineWidthReal, outlierPointSize]);
 
-
-  const handleWheel = (e) => {
+  // zoom + drag
+  const handleWheel = e => {
     const delta = e.deltaY < 0 ? 1.1 : 0.9;
-    setZoom((z) => Math.min(10, Math.max(0.1, z * delta)));
+    setZoom(z => Math.min(10, Math.max(0.1, z * delta)));
   };
-
-  const handleMouseDown = (e) => {
+  const handleMouseDown = e => {
     setDragging(true);
     setLastPos({ x: e.clientX, y: e.clientY });
   };
-
-  const handleMouseMove = (e) => {
+  const handleMouseMove = e => {
     if (!dragging) return;
     const dx = e.clientX - lastPos.x;
     const dy = e.clientY - lastPos.y;
-    setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+    setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
     setLastPos({ x: e.clientX, y: e.clientY });
   };
-
   const handleMouseUp = () => setDragging(false);
 
   return (

@@ -2,17 +2,14 @@ import React, { useState } from 'react';
 import './ParameterSettings.css';
 
 export default function ParameterSettings({
-  tolerance,
   lineWidthModel,
   lineWidthReal,
   outlierPointSize,
-  onToleranceChange,
   onLineWidthModelChange,
   onLineWidthRealChange,
   onOutlierPointSizeChange,
   username
 }) {
-  const [localTol, setLocalTol] = useState(tolerance);
   const [localLineModel, setLocalLineModel] = useState(lineWidthModel);
   const [localLineReal, setLocalLineReal] = useState(lineWidthReal);
   const [localOutlierSize, setLocalOutlierSize] = useState(outlierPointSize);
@@ -20,20 +17,14 @@ export default function ParameterSettings({
 
   const handleSave = async () => {
     try {
-      const parsedTol = parseFloat(localTol);
       const parsedModel = parseFloat(localLineModel);
       const parsedReal = parseFloat(localLineReal);
       const parsedOutlier = parseFloat(localOutlierSize);
 
-      if ([parsedTol, parsedModel, parsedReal, parsedOutlier].some(isNaN)) {
+      if ([parsedModel, parsedReal, parsedOutlier].some(isNaN)) {
         alert("Podaj poprawne liczby dla wszystkich parametrów.");
         return;
       }
-
-      await window.electronAPI.invoke('save-parameter', {
-        username, parameter: 'tolerance', oldValue: tolerance, newValue: parsedTol
-      });
-      onToleranceChange(parsedTol);
 
       await window.electronAPI.invoke('save-parameter', {
         username, parameter: 'lineWidthModel', oldValue: lineWidthModel, newValue: parsedModel
@@ -61,20 +52,31 @@ export default function ParameterSettings({
     <div className="parameter-settings-card">
       <h3>Zmiana parametrów</h3>
       <div className="param-row">
-        <label>Tolerancja (px):</label>
-        <input type="number" value={localTol} step="0.1" onChange={(e) => setLocalTol(e.target.value)} />
-      </div>
-      <div className="param-row">
         <label>Grubość linii modelu:</label>
-        <input type="number" value={localLineModel} step="0.5" onChange={(e) => setLocalLineModel(e.target.value)} />
+        <input
+          type="number"
+          value={localLineModel}
+          step="0.5"
+          onChange={(e) => setLocalLineModel(e.target.value)}
+        />
       </div>
       <div className="param-row">
         <label>Grubość linii rzeczywistych:</label>
-        <input type="number" value={localLineReal} step="0.5" onChange={(e) => setLocalLineReal(e.target.value)} />
+        <input
+          type="number"
+          value={localLineReal}
+          step="0.5"
+          onChange={(e) => setLocalLineReal(e.target.value)}
+        />
       </div>
       <div className="param-row">
         <label>Rozmiar punktów poza tolerancją:</label>
-        <input type="number" value={localOutlierSize} step="0.5" onChange={(e) => setLocalOutlierSize(e.target.value)} />
+        <input
+          type="number"
+          value={localOutlierSize}
+          step="0.5"
+          onChange={(e) => setLocalOutlierSize(e.target.value)}
+        />
       </div>
       <button className="save-button" onClick={handleSave}>Zapisz</button>
       {message && <div className="save-message">{message}</div>}

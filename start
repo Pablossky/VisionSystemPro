@@ -1,2 +1,5 @@
 npx webpack --config webpack.config.js
 npx electron .
+
+npx tsc
+npm run build-api
