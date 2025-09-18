@@ -69,13 +69,21 @@ export default function TemplateFileSelector({ onSelectElements, preselectedElem
 
   const confirmSelection = () => {
     const allElements = Object.values(folderElements).flat();
-    const selected = allElements.filter(({ id }) => selectedIds.has(id));
+    const selected = allElements
+      .filter(({ id }) => selectedIds.has(id))
+      .map(el => ({
+        ...el,
+        element_name: el.name || `Element ${el.id}`,  // <-- dodajemy pole element_name
+        data: el.data || {}, // jeśli masz też dane konturu
+      }));
+
     if (selected.length === 0) {
       setError('Proszę wybrać przynajmniej jeden element.');
       return;
     }
     onSelectElements(selected);
   };
+
 
   const toggleFolder = (idx) => {
     const key = idx.toString();

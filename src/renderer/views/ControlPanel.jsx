@@ -2,17 +2,43 @@ import React, { useState } from 'react';
 import Select from 'react-select';
 import ShapeAccuracyCalculator from './../components/ShapeAccuracyCalculator';
 import ContourData from './../components/ContourData';
-import cvApi from '../../api/CvApiService.ts'; // Twój nowy ICvApi wrapper
+import cvApi from '../../api/CvApiService';
 import markerElements from '../../data/data';
+
+// 🔹 Popup do wyboru podobnych elementów
+function SimilarElementChooser({ options, onSelect }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999
+    }}>
+      <div style={{ backgroundColor: 'white', padding: 20, borderRadius: 8 }}>
+        <h4>Wybierz model elementu</h4>
+        <ul>
+          {options.map(opt => (
+            <li key={opt} style={{ margin: 5 }}>
+              <button onClick={() => onSelect(opt.replace('.json', ''))}>
+                {opt.replace('.json', '')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
 
 export default function ControlPanel({ onStartScan, user }) {
   const [markerNumber, setMarkerNumber] = useState('');
   const [elements, setElements] = useState([]);
   const [selectedElements, setSelectedElements] = useState(new Set());
   const [error, setError] = useState('');
-
-  const [scanConfirmed, setScanConfirmed] = useState(null); // null | 'approved' | 'rejected'
-  const [comment, setComment] = useState('');
+  const [pendingChoice, setPendingChoice] = useState(null);
 
   const markerOptions = Object.keys(markerElements).map((m) => ({
     value: m,
@@ -23,31 +49,49 @@ export default function ControlPanel({ onStartScan, user }) {
     setError('');
     setElements([]);
     setSelectedElements(new Set());
-    setScanConfirmed(null);
-    setComment('');
 
     try {
-      // 🔹 1. Zrób zdjęcia pomiarowe
       await cvApi.takeMeasurementPhotos();
-
-      // 🔹 2. Wykryj elementy
       await cvApi.detectElements();
-
-      // 🔹 3. Pobierz wykryte elementy
       const { detectedElements } = await cvApi.getDetectedElements();
+
       if (!detectedElements || detectedElements.length === 0) {
         setError('Nie wykryto żadnych elementów dla tego markera');
         return;
       }
 
-      // 🔹 4. Mapowanie elementów do lokalnego formatu
-      const calculator = new ShapeAccuracyCalculator(); // jeśli potrzebujesz tolerancji możesz przekazać
-      const enriched = detectedElements.map((el, index) => ({
-        id: index,
-        element_name: el.shapeComparisons[0]?.shape?.name || `Element ${index + 1}`,
-        data: el.elementBox,
-        accuracy: calculator.calculateAccuracy(el.elementBox)
-      }));
+      const calculator = new ShapeAccuracyCalculator();
+
+      for (let index = 0; index < detectedElements.length; index++) {
+        const el = detectedElements[index];
+        const accuracy = calculator.calculateAccuracy(el.elementBox);
+        const similar = await cvApi.findSimilarElements(el.elementBox);
+
+        let element_name = `Element ${index + 1}`;
+
+        if (similar.length === 1) {
+          element_name = similar[0].replace('.json', '');
+        } else if (similar.length > 1) {
+          setPendingChoice({
+            options: similar,
+            onSelect: (selected) => {
+              const name = selected.replace('.json', '');
+              setElements(prev => {
+                const newElements = [...prev];
+                newElements[index] = { ...newElements[index], element_name: name };
+                return newElements;
+              });
+            }
+          });
+        }
+
+        enriched.push({
+          id: index,
+          element_name,   // ✔ zawsze coś jest tu
+          data: el.elementBox,
+          accuracy
+        });
+      }
 
       setElements(enriched);
     } catch (err) {
@@ -75,14 +119,13 @@ export default function ControlPanel({ onStartScan, user }) {
 
     try {
       for (const el of selectedElemsArray) {
-        const shapeId = el.element_name; // zakładamy ID modelu kształtu
-        await cvApi.measureElement(el.id, shapeId, 0); // 0 = grubość materiału
+        const shapeId = el.element_name;
+        await cvApi.measureElement(el.id, shapeId, 0);
         await cvApi.getMeasuredElement(el.id);
       }
 
       onStartScan(selectedElemsArray);
 
-      // Logowanie w Electron
       const description = selectedElemsArray.map(el => {
         const acc = typeof el.accuracy === 'number' ? `${el.accuracy.toFixed(1)}%` : 'brak danych';
         return `${el.element_name}, Accuracy: ${acc}`;
@@ -140,6 +183,17 @@ export default function ControlPanel({ onStartScan, user }) {
 
           <button onClick={handleStartScanClick}>START/SCAN</button>
         </>
+      )}
+
+      {/* 🔹 Render popup, jeśli jest pendingChoice */}
+      {pendingChoice && (
+        <SimilarElementChooser
+          options={pendingChoice.options}
+          onSelect={(chosen) => {
+            pendingChoice.onSelect(chosen);
+            setPendingChoice(null);
+          }}
+        />
       )}
     </div>
   );

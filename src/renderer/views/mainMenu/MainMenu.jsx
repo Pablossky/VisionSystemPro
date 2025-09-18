@@ -23,7 +23,7 @@ import logo from '../../../assets/LOGO.png';
 const optionsByRole = {
   programmer: [
     "Logi",
-    "Skanuj marker",
+    "Skanuj elementy",
     "Wyszukaj marker",
     "Podgląd konturu",
     "Zmiana parametrów",
@@ -36,7 +36,7 @@ const optionsByRole = {
   ],
   service: [
     "Logi",
-    "Skanuj marker",
+    "Skanuj elementy",
     "Wyszukaj marker",
     "Podgląd konturu",
     "Zmiana parametrów",
@@ -49,7 +49,7 @@ const optionsByRole = {
   ],
   admin: [
     "Logi",
-    "Skanuj marker",
+    "Skanuj elementy",
     "Wyszukaj marker",
     "Podgląd konturu",
     "Zmiana parametrów",
@@ -60,7 +60,7 @@ const optionsByRole = {
     "Wyloguj się",
   ],
   operator: [
-    "Skanuj marker",
+    "Skanuj elementy",
     "Wyszukaj marker",
     "Podgląd konturu",
     "Tolerancja",
@@ -122,14 +122,13 @@ export default function MainMenu({ user, onLogout }) {
     }
   }, [selectedOption]);
 
-
-
   const handleStartScan = (elements) => {
     console.log('Start scanning elements:', elements);
-    setScannedElements(elements);
+    setScannedElements(elements);   // teraz każdy element ma element_name
     setIsReplay(false);
     setSelectedOption("Podgląd konturu");
   };
+
 
 
   const handleScanApproval = () => {
@@ -147,40 +146,36 @@ export default function MainMenu({ user, onLogout }) {
     }
 
     const safeElements = scanData.map((item, index) => {
-      const data = item.data || item;  // obsługa, jeśli item ma strukturę { data: {...} } lub sam obiekt
+      const data = item.data || item;
+      const element_name = item.element_name || item.marker_number || item.name || `Element ${index + 1}`;
 
-      const marker_number = item.marker_number || item.name || `Element ${index + 1}`;
-
-      // Wydobywamy punkty, próbując z mainContour.points
+      // punkty
       let points = [];
-      if (Array.isArray(data)) {
-        points = data;
-      } else if (data?.mainContour?.points) {
-        points = data.mainContour.points;
-      } else if (data?.points) {
-        points = data.points;
-      } else if (Array.isArray(data.mainContour)) {
-        points = data.mainContour;
-      }
+      if (Array.isArray(data)) points = data;
+      else if (data?.mainContour?.points) points = data.mainContour.points;
+      else if (data?.points) points = data.points;
+      else if (Array.isArray(data.mainContour)) points = data.mainContour;
 
-      const formattedPoints = points.map((pt) => ({
+      const formattedPoints = points.map(pt => ({
         position: pt.position || [0, 0],
         modelPosition: pt.modelPosition || [0, 0],
         distance: pt.distance || 0,
       }));
 
       return {
+        ...item,
         data: {
           ...data,
           mainContour: {
             ...data.mainContour,
-            points: formattedPoints,
-          },
+            points: formattedPoints
+          }
         },
-        marker_number,
-        accuracy: item.accuracy !== undefined ? item.accuracy : null,
+        element_name,
+        accuracy: item.accuracy !== undefined ? item.accuracy : null
       };
     });
+
 
     console.log("Replay - got safeElements:", safeElements);
 
@@ -240,10 +235,12 @@ export default function MainMenu({ user, onLogout }) {
       case "Zatwierdź OK/NOK":
       case "Logi":
         return <LogsWindow onClose={() => setSelectedOption(null)} />;
-      case "Skanuj marker":
+      case "Skanuj elementy":
         return (
-          <ControlPanel onStartScan={handleStartScan} user={user} />,
-          <TemplateFileSelector onSelectElements={handleStartScan} />
+          <>
+            <ControlPanel onStartScan={handleStartScan} user={user} />
+            <TemplateFileSelector onSelectElements={handleStartScan} />
+          </>
         )
       case "Podgląd konturu":
         return (
