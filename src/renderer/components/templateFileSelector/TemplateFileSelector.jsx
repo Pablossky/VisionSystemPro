@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Button from 'react-bootstrap/Button';
+import MiniContourPreview from './../MiniContourPreview';
 import './TemplateFileSelector.css';
 
 export default function TemplateFileSelector({ onSelectElements, preselectedElementIds = [] }) {
@@ -11,6 +12,9 @@ export default function TemplateFileSelector({ onSelectElements, preselectedElem
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedKeys, setExpandedKeys] = useState([]);
   const folderRefs = useRef({});
+
+  const [hoveredElement, setHoveredElement] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     (async () => {
@@ -189,27 +193,38 @@ export default function TemplateFileSelector({ onSelectElements, preselectedElem
                   <div className="accordion-body">
                     {elements.length > 0 ? (
                       <ul className="accordion-elements-list">
-                        {elements.map(({ id, name }) => (
+                        {elements.map((el) => (
                           <li
-                            key={id}
+                            key={el.id}
                             style={{
-                              backgroundColor: preselectedElementIds.includes(id) ? '#5566dd33' : 'transparent',
+                              backgroundColor: preselectedElementIds.includes(el.id) ? '#5566dd33' : 'transparent',
                               borderRadius: '6px',
                               padding: '2px 4px',
+                            }}
+                            onMouseEnter={(e) => {
+                              setHoveredElement(el);                // ustawiamy element do podglądu
+                              setMousePos({ x: e.clientX, y: e.clientY }); // pierwsza pozycja kursora
+                            }}
+                            onMouseMove={(e) => {
+                              setMousePos({ x: e.clientX, y: e.clientY }); // przesuwanie podąża za kursorem
+                            }}
+                            onMouseLeave={() => {
+                              setHoveredElement(null);              // chowamy preview
                             }}
                           >
                             <label className="accordion-label">
                               <input
                                 type="checkbox"
-                                checked={selectedIds.has(id)}
-                                onChange={() => toggleSelection(id)}
+                                checked={selectedIds.has(el.id)}
+                                onChange={() => toggleSelection(el.id)}
                                 className="checkbox"
                               />
-                              <span>{name || `Element ${id}`}</span>
+                              <span>{el.name || `Element ${el.id}`}</span>
                             </label>
                           </li>
                         ))}
                       </ul>
+
                     ) : (
                       <p className="empty-text">Brak elementów w folderze.</p>
                     )}
@@ -230,6 +245,14 @@ export default function TemplateFileSelector({ onSelectElements, preselectedElem
       >
         Wybierz elementy
       </Button>
+
+      {hoveredElement && (
+        <MiniContourPreview
+          element={hoveredElement}
+          x={mousePos.x}
+          y={mousePos.y}
+        />
+      )}
     </div>
   );
 }

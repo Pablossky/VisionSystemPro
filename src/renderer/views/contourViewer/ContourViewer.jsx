@@ -91,6 +91,12 @@ export default function ContourViewer({
           ctx.font = '16px Arial';
           ctx.fillText(`Zgodność: ${accuracy.toFixed(1)}%`, x + 10, y - 10);
         }
+
+        if (name) {
+        ctx.fillStyle = 'yellow';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(name, x + 10, y - 30);
+      }
       }
 
       // -----------------------
