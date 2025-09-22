@@ -1,0 +1,86 @@
+.comment-manager {
+  padding: 20px;
+  background: #1e1e1e;
+  color: #eee;
+  border-radius: 8px;
+  max-width: 500px;
+  margin: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.cm-header {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #00ffb3;
+}
+
+.cm-input-wrapper {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.cm-input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background-color: #2a2a2a;
+  color: #eee;
+}
+
+.cm-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #00ffb3;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.cm-add-btn:hover {
+  background-color: #00cc8f;
+}
+
+.cm-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cm-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  transition: 0.2s;
+}
+
+.cm-item:hover {
+  background-color: #333;
+}
+
+.cm-text {
+  flex: 1;
+}
+
+.cm-delete-btn {
+  background: transparent;
+  border: none;
+  color: #ff4d4d;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cm-delete-btn:hover {
+  color: #ff0000;
+}

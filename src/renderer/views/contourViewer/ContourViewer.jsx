@@ -1,3 +1,4 @@
+// ContourViewer.jsx
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
 
@@ -7,10 +8,11 @@ export default function ContourViewer({
   lineWidthModel,
   lineWidthReal,
   outlierPointSize,
-  workspaceColor = '#006400', // domyślna wartość
-  fontSize = 16               // domyślna wartość
+  workspaceColor = '#006400', 
+  fontSize = 16,
+  selectedElementIdx,
+  onSelectElement
 }) {
-
   const canvasRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -22,16 +24,27 @@ export default function ContourViewer({
     [tolerances.Points.value]
   );
 
+  const getBoundingBox = (points) => {
+    const xs = points.map(p => p[0]);
+    const ys = points.map(p => p[1]);
+    return {
+      minX: Math.min(...xs),
+      minY: Math.min(...ys),
+      maxX: Math.max(...xs),
+      maxY: Math.max(...ys),
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys),
+    };
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    // najpierw czyść cały canvas i wypełnij tłem
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // resetuje wszystkie transformacje
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = workspaceColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // teraz stosujemy zoom i przesunięcie
     ctx.save();
     ctx.translate(offset.x, offset.y);
     ctx.scale(zoom, zoom);
@@ -41,7 +54,6 @@ export default function ContourViewer({
       return;
     }
 
-    // ustawienia siatki dla rozkładu elementów
     const margin = 20;
     const elementsPerRow = Math.ceil(Math.sqrt(elements.length));
     const canvasWidth = canvas.width;
@@ -50,20 +62,12 @@ export default function ContourViewer({
     const cellHeight = canvasHeight / elementsPerRow;
 
     elements.forEach(({ data, element_name }, idx) => {
-      if (!data || !data.mainContour?.points) return;
+      if (!data?.mainContour?.points) return;
 
-      // bounding box konturu
       const modelPoints = data.mainContour.points.map(pt => pt.modelPosition);
-      const xs = modelPoints.map(p => p[0]);
-      const ys = modelPoints.map(p => p[1]);
-      const minX = Math.min(...xs);
-      const minY = Math.min(...ys);
-      const maxX = Math.max(...xs);
-      const maxY = Math.max(...ys);
-      const elemWidth = maxX - minX;
-      const elemHeight = maxY - minY;
+      const realPoints = data.mainContour.points.map(pt => pt.position);
+      const { minX, minY, maxX, maxY, width: elemWidth, height: elemHeight } = getBoundingBox(realPoints);
 
-      // przesunięcie w siatce
       const row = Math.floor(idx / elementsPerRow);
       const col = idx % elementsPerRow;
       const offsetX = col * cellWidth + margin - minX;
@@ -74,7 +78,7 @@ export default function ContourViewer({
 
       const accuracy = calculator.calculateAccuracy(data);
 
-      // 1) GŁÓWNY KONTUR
+      // --- Rysowanie konturów modelu ---
       ctx.beginPath();
       modelPoints.forEach(([x, y], i) =>
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
@@ -93,7 +97,7 @@ export default function ContourViewer({
       ctx.strokeStyle = tolerances.Points.color;
       ctx.stroke();
 
-      const realPoints = data.mainContour.points.map(pt => pt.position);
+      // --- Rysowanie konturu rzeczywistego ---
       ctx.beginPath();
       realPoints.forEach(([x, y], i) =>
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
@@ -114,7 +118,7 @@ export default function ContourViewer({
         }
       });
 
-      // podpisy po prawej stronie konturu
+      // podpis
       const padding = 4;
       ctx.font = `${fontSize}px Arial`;
       const accText = `Zgodność: ${accuracy.toFixed(1)}%`;
@@ -123,101 +127,28 @@ export default function ContourViewer({
       const boxHeight = 16 + 14 + padding * 2 + 4;
       const textX = maxX + 10;
       const textY = minY + 10;
-
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.fillRect(textX - padding, textY - padding, boxWidth, boxHeight);
-
       ctx.fillStyle = 'white';
       ctx.fillText(accText, textX, textY + 14);
       ctx.fillStyle = 'yellow';
       ctx.font = 'bold 14px Arial';
       ctx.fillText(nameText, textX, textY + 14 + 18);
 
-      // 2) V-CUTS
-      if (data.vcuts) {
-        data.vcuts.forEach(vcut => {
-          if (!vcut.found) return;
-          const pts = data.mainContour.points.slice(vcut.startPointIdx, vcut.endPointIdx + 1);
-          ctx.beginPath();
-          pts.forEach((pt, i) =>
-            i === 0 ? ctx.moveTo(pt.position[0], pt.position[1]) : ctx.lineTo(pt.position[0], pt.position[1])
-          );
-          ctx.lineWidth = lineWidthReal * 2;
-          ctx.strokeStyle = tolerances.Vcuts.color;
-          ctx.stroke();
-
-          if (vcut.highestDepthIdx !== undefined && data.mainContour.points[vcut.highestDepthIdx]) {
-            const [hx, hy] = data.mainContour.points[vcut.highestDepthIdx].position;
-            ctx.beginPath();
-            ctx.arc(hx, hy, outlierPointSize * 1.5, 0, 2 * Math.PI);
-            ctx.fillStyle = tolerances.Vcuts.color;
-            ctx.fill();
-          }
-
-          const startPos = pts[0]?.position || [0, 0];
-          ctx.fillStyle = tolerances.Vcuts.color;
-          ctx.font = '14px Arial';
-          ctx.fillText(`depth=${vcut.depth.toFixed(2)} w=${vcut.width.toFixed(2)}`, startPos[0] + 5, startPos[1] - 5);
-
-          if (Math.abs(vcut.depth) > tolerances.Vcuts.value) {
-            ctx.beginPath();
-            ctx.arc(startPos[0], startPos[1], outlierPointSize, 0, 2 * Math.PI);
-            ctx.fillStyle = 'orange';
-            ctx.fill();
-          }
-        });
-      }
-
-      // 3) DODATKOWE KONTURY
-      if (data.additionalContours) {
-        data.additionalContours.forEach(contour => {
-          const modelPts = contour.points.map(pt => pt.modelPosition);
-          const realPts = contour.points.map(pt => pt.position);
-
-          ctx.beginPath();
-          modelPts.forEach(([x, y], i) =>
-            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-          );
-          ctx.closePath();
-          ctx.lineWidth = lineWidthModel + 2 * tolerances.Additional.value;
-          ctx.strokeStyle = tolerances.Additional.color + '66';
-          ctx.stroke();
-
-          ctx.beginPath();
-          modelPts.forEach(([x, y], i) =>
-            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-          );
-          ctx.closePath();
-          ctx.lineWidth = lineWidthModel;
-          ctx.strokeStyle = tolerances.Additional.color;
-          ctx.stroke();
-
-          ctx.beginPath();
-          realPts.forEach(([x, y], i) =>
-            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-          );
-          ctx.closePath();
-          ctx.lineWidth = lineWidthReal;
-          ctx.strokeStyle = 'black';
-          ctx.stroke();
-
-          contour.points.forEach(pt => {
-            const [x, y] = pt.position;
-            if (Math.abs(pt.distance) > tolerances.Additional.value) {
-              ctx.beginPath();
-              ctx.arc(x, y, outlierPointSize, 0, 2 * Math.PI);
-              ctx.fillStyle = 'red';
-              ctx.fill();
-            }
-          });
-        });
+      // --- Ramka wokół wybranego elementu ---
+      if (selectedElementIdx === idx) {
+        ctx.save();
+        ctx.strokeStyle = 'cyan';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(minX - 5, minY - 5, elemWidth + 10, elemHeight + 10);
+        ctx.restore();
       }
 
       ctx.restore();
     });
 
     ctx.restore();
-  }, [elements, zoom, offset, tolerances, calculator, lineWidthModel, lineWidthReal, outlierPointSize]);
+  }, [elements, zoom, offset, tolerances, calculator, lineWidthModel, lineWidthReal, outlierPointSize, selectedElementIdx, workspaceColor, fontSize]);
 
   const handleWheel = e => {
     const delta = e.deltaY < 0 ? 1.1 : 0.9;
@@ -236,6 +167,23 @@ export default function ContourViewer({
   };
   const handleMouseUp = () => setDragging(false);
 
+  const handleCanvasClick = e => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - offset.x) / zoom;
+    const y = (e.clientY - rect.top - offset.y) / zoom;
+
+    let clickedIdx = null;
+    elements.forEach(({ data }, idx) => {
+      if (!data?.mainContour?.points) return;
+      const { minX, minY, maxX, maxY } = getBoundingBox(data.mainContour.points.map(pt => pt.position));
+      if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+        clickedIdx = idx;
+      }
+    });
+
+    if (clickedIdx !== null) onSelectElement(clickedIdx);
+  };
+
   return (
     <div style={{ padding: 20 }}>
       <h3>Podgląd konturów elementów</h3>
@@ -249,6 +197,7 @@ export default function ContourViewer({
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onClick={handleCanvasClick}
       />
     </div>
   );

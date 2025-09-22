@@ -43,7 +43,7 @@ return (
   <div className="login-wrapper">
     <div className="login-header">
       <img src={Logo} alt="Logo" className="login-logo" />
-      <h1 className="login-title">Vision System - Pro</h1>
+      <h1 className="login-title">Vision Pro System</h1>
     </div>
 
     <div className="login-panel card">

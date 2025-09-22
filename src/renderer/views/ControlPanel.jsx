@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import Select from 'react-select';
-import ShapeAccuracyCalculator from './../components/ShapeAccuracyCalculator';
 import ContourData from './../components/ContourData';
-import cvApi from '../../api/CvApiService';
+import cvApi from '../../api/CvApi';
 import markerElements from '../../data/data';
+import shapes from '../../data/shapes.json';
 
 // 🔹 Popup do wyboru podobnych elementów
 function SimilarElementChooser({ options, onSelect }) {
@@ -40,12 +40,25 @@ export default function ControlPanel({ onStartScan, user }) {
   const [error, setError] = useState('');
   const [pendingChoice, setPendingChoice] = useState(null);
 
-  const markerOptions = Object.keys(markerElements).map((m) => ({
+  const markerOptions = Object.keys(markerElements).map(m => ({
     value: m,
     label: `Marker ${m}`
   }));
 
-  const handleLoadElements = async () => {
+  const findSimilarShapes = (elementBox) => {
+    return shapes
+      .filter(s => {
+        const main = s.mainContour.fullContour;
+        if (!main || main.length === 0) return false;
+        const width = Math.max(...main.map(p => p[0])) - Math.min(...main.map(p => p[0]));
+        const height = Math.max(...main.map(p => p[1])) - Math.min(...main.map(p => p[1]));
+        return Math.abs(width - elementBox.width) / elementBox.width < 0.2 &&
+          Math.abs(height - elementBox.height) / elementBox.height < 0.2;
+      })
+      .map(s => s.name);
+  };
+
+  const handleDetectElements = async () => {
     setError('');
     setElements([]);
     setSelectedElements(new Set());
@@ -60,25 +73,21 @@ export default function ControlPanel({ onStartScan, user }) {
         return;
       }
 
-      const calculator = new ShapeAccuracyCalculator();
+      const enriched = [];
 
       for (let index = 0; index < detectedElements.length; index++) {
         const el = detectedElements[index];
-        const accuracy = calculator.calculateAccuracy(el.elementBox);
-        const similar = await cvApi.findSimilarElements(el.elementBox);
+        let similar = findSimilarShapes(el.elementBox);
 
         let element_name = `Element ${index + 1}`;
-
-        if (similar.length === 1) {
-          element_name = similar[0].replace('.json', '');
-        } else if (similar.length > 1) {
+        if (similar.length === 1) element_name = similar[0];
+        else if (similar.length > 1) {
           setPendingChoice({
             options: similar,
-            onSelect: (selected) => {
-              const name = selected.replace('.json', '');
+            onSelect: selected => {
               setElements(prev => {
                 const newElements = [...prev];
-                newElements[index] = { ...newElements[index], element_name: name };
+                newElements[index] = { ...newElements[index], element_name: selected };
                 return newElements;
               });
             }
@@ -87,16 +96,16 @@ export default function ControlPanel({ onStartScan, user }) {
 
         enriched.push({
           id: index,
-          element_name,   // ✔ zawsze coś jest tu
-          data: el.elementBox,
-          accuracy
+          element_name,
+          data: el.elementBox, // <-- używamy tylko wykrytego elementBox
+          accuracy: 100
         });
       }
 
       setElements(enriched);
     } catch (err) {
-      console.error('Błąd podczas ładowania elementów:', err);
-      setError('Nie udało się pobrać elementów z API');
+      console.error('Błąd podczas wykrywania elementów:', err);
+      setError('Nie udało się wykryć elementów');
     }
   };
 
@@ -121,20 +130,18 @@ export default function ControlPanel({ onStartScan, user }) {
       for (const el of selectedElemsArray) {
         const shapeId = el.element_name;
         await cvApi.measureElement(el.id, shapeId, 0);
-        await cvApi.getMeasuredElement(el.id);
+        const measurement = await cvApi.getMeasuredElement(el.id);
+        el.data = measurement; // podmieniamy elementBox na pełny measurement po zmierzeniu
       }
 
-      onStartScan(selectedElemsArray);
 
-      const description = selectedElemsArray.map(el => {
-        const acc = typeof el.accuracy === 'number' ? `${el.accuracy.toFixed(1)}%` : 'brak danych';
-        return `${el.element_name}, Accuracy: ${acc}`;
-      }).join('\n');
+      onStartScan(selectedElemsArray);
 
       window.electronAPI.logAction({
         username: user.username,
         action: 'Skanowanie',
-        details: `Marker: ${markerNumber.trim()}\n${description}`,
+        details: `Marker: ${markerNumber.trim()}\n` +
+          selectedElemsArray.map(el => `${el.element_name}, Accuracy: ${el.accuracy}%`).join('\n'),
         scanData: JSON.stringify(selectedElemsArray.map(el => new ContourData(el.data).toJSON()))
       });
     } catch (err) {
@@ -149,11 +156,11 @@ export default function ControlPanel({ onStartScan, user }) {
 
       <Select
         options={markerOptions}
-        onChange={(selected) => setMarkerNumber(selected?.value || '')}
+        onChange={selected => setMarkerNumber(selected?.value || '')}
         placeholder="Wybierz marker..."
         isClearable
       />
-      <button onClick={handleLoadElements}>Załaduj elementy</button>
+      <button onClick={handleDetectElements}>Detect Elements</button>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
@@ -161,7 +168,7 @@ export default function ControlPanel({ onStartScan, user }) {
         <>
           <h3>Elementy do kontroli:</h3>
           <ul>
-            {elements.map((el) => (
+            {elements.map(el => (
               <li key={el.id}>
                 <label>
                   <input
@@ -185,11 +192,10 @@ export default function ControlPanel({ onStartScan, user }) {
         </>
       )}
 
-      {/* 🔹 Render popup, jeśli jest pendingChoice */}
       {pendingChoice && (
         <SimilarElementChooser
           options={pendingChoice.options}
-          onSelect={(chosen) => {
+          onSelect={chosen => {
             pendingChoice.onSelect(chosen);
             setPendingChoice(null);
           }}

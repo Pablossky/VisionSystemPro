@@ -7,7 +7,7 @@ import ContourViewer from '../contourViewer/ContourViewer';
 import ScanApproval from '../../components/ScanApproval';
 import ParameterSettings from '../parameterPanel/ParameterSettings';
 import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
-import CommentManager from '../../components/CommentManager';
+import CommentManager from '../commentManager/CommentManager';
 import UserManager from '../../components/UserManager';
 import TemplateFileSelector from '../../components/templateFileSelector/TemplateFileSelector';
 import GoalsPanel from '../goals/GoalsPanel';
@@ -190,7 +190,9 @@ export default function MainMenu({ user, onLogout }) {
     <div className="main-panel">
       <div className="logo-container">
         <img src={logo} alt="Logo" className="app-logo" />
+        <p className="app-name">Vision Pro System</p>
       </div>
+
 
       <div className="left-panel">
         <ContourViewer
