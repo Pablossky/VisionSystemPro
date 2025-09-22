@@ -1,96 +1,72 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import ControlPanel from '../ControlPanel';
 import LogsWindow from '../logsWindow/LogsWindow';
 import MarkerSearch from '../../components/MarkerSearch';
 import ContourViewer from '../contourViewer/ContourViewer';
 import ScanApproval from '../../components/ScanApproval';
-import ElementDetailsPanel from '../../components/ElementDetailsPanel';
 import ParameterSettings from '../parameterPanel/ParameterSettings';
 import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
 import CommentManager from '../../components/CommentManager';
 import UserManager from '../../components/UserManager';
-import RightSidebar from '../../components/RightSidebar';
 import TemplateFileSelector from '../../components/templateFileSelector/TemplateFileSelector';
 import GoalsPanel from '../goals/GoalsPanel';
 import CalibrationPanel from '../calibrationPanel/CalibrationPanel';
 import ToleranceSettings from '../tolerancePanel/ToleranceSettings';
+import GeneralSettings from '../generalSettings/GeneralSettings';
 import './MainMenu.css';
-
 import logo from '../../../assets/LOGO.png';
 
-// Definiujemy dostępne opcje w zależności od roli użytkownika
-
-const optionsByRole = {
+const groupedOptionsByRole = {
   programmer: [
-    "Logi",
-    "Skanuj elementy",
-    "Wyszukaj marker",
-    "Podgląd konturu",
-    "Zmiana parametrów",
-    "Tolerancja",
-    "Zarządzaj użytkownikami",
-    "Zarządzaj komentarzami",
-    "Cele skanowania",
-    "Kalibracja",
-    "Wyloguj się",
+    { label: "Procedury kontroli", children: ["Logi", "Skanuj elementy", "Wyszukaj marker", "Podgląd konturu", "Cele skanowania"] },
+    { label: "Parametry", children: ["Zmiana parametrów", "Tolerancja"] },
+    { label: "Ustawienia", children: ["Zarządzaj użytkownikami", "Zarządzaj komentarzami", "Kalibracja", "Ustawienia ogólne"] }
   ],
   service: [
-    "Logi",
-    "Skanuj elementy",
-    "Wyszukaj marker",
-    "Podgląd konturu",
-    "Zmiana parametrów",
-    "Tolerancja",
-    "Zarządzaj użytkownikami",
-    "Zarządzaj komentarzami",
-    "Cele skanowania",
-    "Kalibracja",
-    "Wyloguj się",
+    { label: "Procedury kontroli", children: ["Logi", "Skanuj elementy", "Wyszukaj marker", "Podgląd konturu", "Cele skanowania"] },
+    { label: "Parametry", children: ["Zmiana parametrów", "Tolerancja"] },
+    { label: "Ustawienia", children: ["Zarządzaj użytkownikami", "Zarządzaj komentarzami", "Kalibracja", "Ustawienia ogólne"] }
   ],
   admin: [
-    "Logi",
-    "Skanuj elementy",
-    "Wyszukaj marker",
-    "Podgląd konturu",
-    "Zmiana parametrów",
-    "Tolerancja",
-    "Zarządzaj użytkownikami",
-    "Zarządzaj komentarzami",
-    "Cele skanowania",
-    "Wyloguj się",
+    { label: "Logi" },
+    { label: "Skanuj elementy" },
+    { label: "Wyszukaj marker" },
+    { label: "Podgląd konturu" },
+    { label: "Parametry", children: ["Zmiana parametrów", "Tolerancja"] },
+    { label: "Ustawienia", children: ["Zarządzaj użytkownikami", "Zarządzaj komentarzami", "Kalibracja"] },
+    { label: "Cele skanowania" }
   ],
   operator: [
-    "Skanuj elementy",
-    "Wyszukaj marker",
-    "Podgląd konturu",
-    "Tolerancja",
-    "Cele skanowania",
-    "Wyloguj się"
+    { label: "Skanuj elementy" },
+    { label: "Wyszukaj marker" },
+    { label: "Podgląd konturu" },
+    { label: "Tolerancja" },
+    { label: "Cele skanowania" }
   ]
 };
 
 export default function MainMenu({ user, onLogout }) {
-  const [showLogs, setShowLogs] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [openGroup, setOpenGroup] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [scannedElements, setScannedElements] = useState([]);
   const [elementsWithAccuracy, setElementsWithAccuracy] = useState([]);
-  const [replayComment, setReplayComment] = useState('');
-  const [isReplay, setIsReplay] = useState(false);
   const [tolerance, setTolerance] = useState(2.0);
-  const [isVerificationMode, setIsVerificationMode] = useState(false);
-  const [originalLogId, setOriginalLogId] = useState(null);
   const [logs, setLogs] = useState([]);
   const [lineWidthModel, setLineWidthModel] = useState(1);
   const [lineWidthReal, setLineWidthReal] = useState(1);
-  const [outlierPointSize, setOutlierPointSize] = useState(4); // domyślny rozmiar czerwonych punktów
+  const [outlierPointSize, setOutlierPointSize] = useState(1);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [workspaceColor, setWorkspaceColor] = useState('#006400');
+  const [fontSize, setFontSize] = useState(16);
   const [tolerances, setTolerances] = useState({
     Points: { value: 2.0, color: '#ffffff' },
     Vcuts: { value: 2.0, color: '#00ff00' },
     Additional: { value: 1.0, color: '#0000ff' },
   });
 
-
-
+  const userInfoRef = useRef();
 
   useEffect(() => {
     async function loadTolerance() {
@@ -99,7 +75,7 @@ export default function MainMenu({ user, onLogout }) {
         if (storedTolerance !== undefined && storedTolerance !== null) {
           setTolerance(parseFloat(storedTolerance));
         }
-      } catch (e) {
+      } catch {
         console.warn('Nie udało się wczytać tolerancji, używam domyślnej');
       }
     }
@@ -108,13 +84,13 @@ export default function MainMenu({ user, onLogout }) {
 
   useEffect(() => {
     const calculator = new ShapeAccuracyCalculator(tolerance);
-    const updatedElements = scannedElements.map(el => ({
-      ...el,
-      accuracy: calculator.calculateAccuracy(el.data),
-    }));
-    setElementsWithAccuracy(updatedElements);
+    setElementsWithAccuracy(
+      scannedElements.map(el => ({
+        ...el,
+        accuracy: calculator.calculateAccuracy(el.data),
+      }))
+    );
   }, [scannedElements, tolerance]);
-
 
   useEffect(() => {
     if (selectedOption === "Cele skanowania") {
@@ -122,69 +98,25 @@ export default function MainMenu({ user, onLogout }) {
     }
   }, [selectedOption]);
 
+  // Zamykanie menu po kliknięciu poza nim
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userInfoRef.current && !userInfoRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleStartScan = (elements) => {
-    console.log('Start scanning elements:', elements);
-    setScannedElements(elements);   // teraz każdy element ma element_name
-    setIsReplay(false);
+    setScannedElements(elements);
     setSelectedOption("Podgląd konturu");
   };
-
-
 
   const handleScanApproval = () => {
     setScannedElements([]);
     setSelectedOption(null);
-    setIsVerificationMode(false);
-    setOriginalLogId(null);
-  };
-
-
-  const handleReplayScan = (scanData, comment = '', { isVerificationMode = false, originalLogId = null } = {}) => {
-    if (!scanData) {
-      alert('Brak danych skanu do odtworzenia');
-      return;
-    }
-
-    const safeElements = scanData.map((item, index) => {
-      const data = item.data || item;
-      const element_name = item.element_name || item.marker_number || item.name || `Element ${index + 1}`;
-
-      // punkty
-      let points = [];
-      if (Array.isArray(data)) points = data;
-      else if (data?.mainContour?.points) points = data.mainContour.points;
-      else if (data?.points) points = data.points;
-      else if (Array.isArray(data.mainContour)) points = data.mainContour;
-
-      const formattedPoints = points.map(pt => ({
-        position: pt.position || [0, 0],
-        modelPosition: pt.modelPosition || [0, 0],
-        distance: pt.distance || 0,
-      }));
-
-      return {
-        ...item,
-        data: {
-          ...data,
-          mainContour: {
-            ...data.mainContour,
-            points: formattedPoints
-          }
-        },
-        element_name,
-        accuracy: item.accuracy !== undefined ? item.accuracy : null
-      };
-    });
-
-
-    console.log("Replay - got safeElements:", safeElements);
-
-    setScannedElements(safeElements);
-    setReplayComment(comment || '');
-    setIsReplay(true);
-    setSelectedOption('Podgląd konturu');
-    setIsVerificationMode(!!isVerificationMode);
-    setOriginalLogId(originalLogId);
   };
 
   const fetchLogs = async () => {
@@ -196,117 +128,70 @@ export default function MainMenu({ user, onLogout }) {
     }
   };
 
-
-  const options = optionsByRole[user.role] || [];
-
-  const handleLogoutClick = async () => {
-    try {
-      await window.electronAPI.invoke('logout-user', { username: user.username });
-      onLogout();
-    } catch (err) {
-      console.error('Błąd podczas wylogowywania:', err);
-      alert('Błąd podczas wylogowywania');
-    }
-  };
-
   const renderRightPanel = () => {
-    if (showLogs || selectedOption === 'Logi') {
-      return (
-        <LogsWindow
-          onClose={() => {
-            setShowLogs(false);
-            setSelectedOption(null);
-          }}
-          onReplayScan={handleReplayScan}
-        />
-      );
-    }
-
     switch (selectedOption) {
-      case "Wyszukaj marker":
-        return <MarkerSearch />;
-      case "Kalibracja":
+      case "Logi": return <LogsWindow onClose={() => setSelectedOption(null)} />;
+      case "Wyszukaj marker": return <MarkerSearch />;
+      case "Kalibracja": return <CalibrationPanel onClose={() => setSelectedOption(null)} />;
+      case "Ustawienia ogólne":
         return (
-          <CalibrationPanel
-            onClose={() => setSelectedOption(null)}
+          <GeneralSettings
+            workspaceColor={workspaceColor}
+            setWorkspaceColor={setWorkspaceColor}
+            fontSize={fontSize}
+            setFontSize={setFontSize}
           />
         );
-      case "Rozpocznij kontrolę":
-      case "Zatwierdź OK/NOK":
-      case "Logi":
-        return <LogsWindow onClose={() => setSelectedOption(null)} />;
       case "Skanuj elementy":
         return (
           <>
             <ControlPanel onStartScan={handleStartScan} user={user} />
             <TemplateFileSelector onSelectElements={handleStartScan} />
           </>
-        )
+        );
       case "Podgląd konturu":
         return (
           <div className="dynamic-panel">
-
-
-            {/* Dolna część – ScanApproval / opcje po wybraniu */}
             <div className="panel-bottom">
               <ScanApproval
                 elements={elementsWithAccuracy}
                 user={user}
                 onDone={handleScanApproval}
-                markerNumber={elementsWithAccuracy.length > 0 ? (elementsWithAccuracy[0].marker_number || elementsWithAccuracy[0].data?.name || elementsWithAccuracy[0].data?.element_name || '') : ''}
-                isVerificationMode={isVerificationMode}
-                originalLogId={originalLogId}
               />
             </div>
           </div>
         );
-
-      case 'Zmiana parametrów':
+      case "Zmiana parametrów":
         return (
-          <div className="RightSidePanel" style={{ padding: 20 }}>
-            <ParameterSettings
-              tolerance={tolerance}
-              onToleranceChange={setTolerance}
-              username={user.username}
-              lineWidthModel={lineWidthModel}
-              lineWidthReal={lineWidthReal}
-              onLineWidthModelChange={setLineWidthModel} // ✔ musisz dodać
-              onLineWidthRealChange={setLineWidthReal}   // ✔ musisz dodać
-              outlierPointSize={outlierPointSize}
-              onOutlierPointSizeChange={setOutlierPointSize}
-            />
-          </div>
+          <ParameterSettings
+            tolerance={tolerance}
+            onToleranceChange={setTolerance}
+            username={user.username}
+            lineWidthModel={lineWidthModel}
+            lineWidthReal={lineWidthReal}
+            onLineWidthModelChange={setLineWidthModel}
+            onLineWidthRealChange={setLineWidthReal}
+            outlierPointSize={outlierPointSize}
+            onOutlierPointSizeChange={setOutlierPointSize}
+          />
         );
       case "Tolerancja":
-        return (
-          <div className="RightSidePanel" style={{ padding: 20 }}>
-            <ToleranceSettings
-              initialTolerances={tolerances}
-              onSave={setTolerances}
-              username={user.username}
-            />
-          </div>
-        );
-      case "Zarządzaj użytkownikami":
-        return <UserManager />;
-      case "Zarządzaj komentarzami":
-        return <CommentManager />;
-      case "Cele skanowania":
-        return <GoalsPanel logs={logs} />;
-      case "Wyloguj się":
-        onLogout();
-        return null;
-      default:
-        return null;
+        return <ToleranceSettings initialTolerances={tolerances} onSave={setTolerances} username={user.username} />;
+      case "Zarządzaj użytkownikami": return <UserManager />;
+      case "Zarządzaj komentarzami": return <CommentManager />;
+      case "Cele skanowania": return <GoalsPanel logs={logs} />;
+      default: return null;
     }
   };
+
+  const groups = groupedOptionsByRole[user.role] || [];
 
   return (
     <div className="main-panel">
       <div className="logo-container">
         <img src={logo} alt="Logo" className="app-logo" />
       </div>
-      {/* Lewy panel – obszar roboczy 4:3 */}
+
       <div className="left-panel">
         <ContourViewer
           elements={elementsWithAccuracy}
@@ -314,43 +199,90 @@ export default function MainMenu({ user, onLogout }) {
           lineWidthModel={lineWidthModel}
           lineWidthReal={lineWidthReal}
           outlierPointSize={outlierPointSize}
+          workspaceColor={workspaceColor}  // <-- nowy props
+          fontSize={fontSize}              // <-- nowy props
         />
+
       </div>
 
-      {/* Prawy panel – menu, opcje i dodatkowe panele */}
       <div className="right-panel">
-        {/* Górna część – info o użytkowniku i dostępne opcje */}
         <div className="right-panel-top">
-          <div className="card user-info">
-            <h2>Użytkownik: {user.username}</h2>
+          <div className="card user-info" ref={userInfoRef}>
+            <h2 onClick={() => setUserMenuOpen(!userMenuOpen)}>
+              Użytkownik: {user.username}
+              {selectedOption && <span className="current-tab"> — {selectedOption}</span>}
+            </h2>
             <p>Rola: <strong>{user.role}</strong></p>
+
+            {userMenuOpen &&
+              <div className="user-info-popup">
+                <div
+                  className="popup-item"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    onLogout();
+                  }}
+                >
+                  Wyloguj się
+                </div>
+              </div>
+            }
           </div>
+
+
 
           <div className="card access-panel">
             <h3>Dostępne opcje</h3>
             <div className="options-grid">
-              {options.map((opt) => (
-                <div
-                  key={opt}
-                  className={`card option-card ${selectedOption === opt ? 'selected' : ''}`}
-                  onClick={() => {
-                    setSelectedOption(opt);
-                    setShowLogs(false);
-                  }}
-                >
-                  {opt}
+              {groups.map(group => (
+                <div key={group.label} className="option-wrapper">
+                  <div
+                    className={`card option-card ${selectedOption === group.label || group.children?.includes(selectedOption) ? 'selected' : ''}`}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setDropdownPosition({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX });
+                      setOpenGroup(openGroup === group.label ? null : group.label);
+                    }}
+                  >
+                    {group.label}
+                  </div>
+
+                  {group.children && openGroup === group.label &&
+                    ReactDOM.createPortal(
+                      <div
+                        className="popup-menu"
+                        style={{
+                          position: 'absolute',
+                          top: dropdownPosition.top,
+                          left: dropdownPosition.left,
+                          zIndex: 1000
+                        }}
+                      >
+                        {group.children.map(child => (
+                          <div
+                            key={child}
+                            className={`popup-item ${selectedOption === child ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSelectedOption(child);
+                              setOpenGroup(null);
+                            }}
+                          >
+                            {child}
+                          </div>
+                        ))}
+                      </div>,
+                      document.body
+                    )
+                  }
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Dolna część – dynamiczne panele po wybraniu opcji */}
-        {selectedOption && (
-          <div className="right-panel-bottom">
-            {renderRightPanel()}
-          </div>
-        )}
+        <div className="right-panel-bottom">
+          {renderRightPanel()}
+        </div>
       </div>
     </div>
   );

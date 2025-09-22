@@ -3,11 +3,14 @@ import ShapeAccuracyCalculator from '../../components/ShapeAccuracyCalculator';
 
 export default function ContourViewer({
   elements = [],
-  tolerances, // { Points: { value, color }, Vcuts: {...}, Additional: {...} }
+  tolerances,
   lineWidthModel,
   lineWidthReal,
-  outlierPointSize
+  outlierPointSize,
+  workspaceColor = '#006400', // domyślna wartość
+  fontSize = 16               // domyślna wartość
 }) {
+
   const canvasRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -23,15 +26,20 @@ export default function ContourViewer({
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    // tło
-    ctx.fillStyle = '#006400';
+    // najpierw czyść cały canvas i wypełnij tłem
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // resetuje wszystkie transformacje
+    ctx.fillStyle = workspaceColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // teraz stosujemy zoom i przesunięcie
     ctx.save();
     ctx.translate(offset.x, offset.y);
     ctx.scale(zoom, zoom);
 
-    if (elements.length === 0) return;
+    if (elements.length === 0) {
+      ctx.restore();
+      return;
+    }
 
     // ustawienia siatki dla rozkładu elementów
     const margin = 20;
@@ -108,7 +116,7 @@ export default function ContourViewer({
 
       // podpisy po prawej stronie konturu
       const padding = 4;
-      ctx.font = '16px Arial';
+      ctx.font = `${fontSize}px Arial`;
       const accText = `Zgodność: ${accuracy.toFixed(1)}%`;
       const nameText = element_name;
       const boxWidth = Math.max(ctx.measureText(accText).width, ctx.measureText(nameText).width) + padding * 2;

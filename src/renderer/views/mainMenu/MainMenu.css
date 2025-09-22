@@ -10,20 +10,15 @@ html, body {
   color: white;
 }
 
-
-
-
-/* Panel główny */
+/* Panele główne */
 .main-panel {
   display: flex;
   height: 100vh;
   width: 100vw;
   background-color: #1e1e2f;
-  padding: 0px;
-  border-radius: 0; /* brak zaokrągleń */
+  padding: 0;
 }
 
-/* Lewy panel */
 .left-panel {
   flex: 0 0 auto;
   height: 100%;
@@ -32,40 +27,36 @@ html, body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  aspect-ratio: 4 / 3; /* wymusza 4:3 */
+  aspect-ratio: 4/3;
   max-height: 100%;
   min-width: 400px;
   border-right: 1px solid #3a3a4a;
   box-sizing: border-box;
   overflow: hidden;
-  border-radius: 0; /* brak zaokrągleń */
+  border-radius: 0;
 }
 
-/* Prawy panel */
 .right-panel {
   flex: 1;
   display: flex;
-  padding:20px;
   flex-direction: column;
+  padding: 20px;
   box-sizing: border-box;
   background-color: #292a3a;
   overflow: hidden;
 }
 
-/* Górna część – panel z kartami i info o użytkowniku */
 .right-panel-top {
-  flex: 0 0 auto; /* wysokość dopasowana do zawartości */
+  flex: 0 0 auto;
   margin-bottom: 10px;
   overflow-y: auto;
 }
 
-/* Dolna część – dynamiczne panele po wybraniu opcji */
 .right-panel-bottom {
-  flex: 1; /* zajmuje resztę dostępnej wysokości */
-  overflow: auto; /* scroll jeśli zawartość za duża */
+  flex: 1;
+  overflow: auto;
 }
 
-/* Scrollbar dla prawego panelu dolnego */
 .right-panel-bottom::-webkit-scrollbar {
   width: 8px;
 }
@@ -75,99 +66,185 @@ html, body {
   border-radius: 4px;
 }
 
-/* Dynamiczny panel pojawiający się po wybraniu opcji */
+/* Dynamiczny panel */
 .dynamic-panel {
   display: flex;
   flex-direction: column;
-  height: 100%; /* wypełnia cały przydzielony kontener */
+  height: 100%;
   overflow: hidden;
   margin-top: 10px;
 }
 
-/* Wewnętrzny podział dynamicznego panelu na połowę */
 .dynamic-panel .panel-top,
 .dynamic-panel .panel-bottom {
-  flex: 1; /* każda połowa zajmuje 50% */
-  overflow: auto; /* scroll jeśli zawartość większa niż połowa */
-  margin-bottom: 5px; /* opcjonalny odstęp między panelami */
+  flex: 1;
+  overflow: auto;
+  margin-bottom: 5px;
 }
 
 .dynamic-panel .panel-bottom {
-  margin-bottom: 0; /* usuń margin dla ostatniego panelu */
+  margin-bottom: 0;
 }
 
-
-/* Access panel - ograniczona wysokość 40% */
-.access-panel {
-  flex: 0 0 40%; /* dokładnie 40% wysokości prawego panelu */
-  overflow-y: auto;
-  padding: 10px;
+/* Karty i panel opcji */
+.card {
+  background-color: #2b2b2b;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+  margin-bottom: 10px;
+  max-width: 100%;
   box-sizing: border-box;
+  color: #fff;
+  transition: all 0.2s ease;
 }
 
-/* Kontener kart w access panel */
+.card:hover {
+  background-color: #3d3d3d;
+}
+
+/* Specjalne karty */
+.card.option-card {
+  cursor: pointer;
+  text-align: center;
+}
+
+.card.option-card.selected {
+  background-color: #7a1a1a;
+  border: 2px solid #ff5555;
+  color: #ffcccc;
+}
+
+.category-active {
+  border: 2px solid red;
+}
+
+.card.user-info {
+  cursor: pointer;
+  position: relative;
+  padding: 10px;
+}
+
+/* Logout popup */
+.user-info-popup {
+  position: absolute;      /* względem .user-info */
+  top: 100%;               /* poniżej nagłówka */
+  left: 0;
+  background-color: #2b2b2b;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 5px 0;
+  z-index: 2000;
+  min-width: 120px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.user-info-popup .popup-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #fff;
+}
+
+.user-info-popup .popup-item:hover {
+  background-color: #444;
+}
+
+
+.card.access-panel {
+  flex: 0 0 40%;
+  padding: 10px;
+  overflow-y: auto;
+}
+
 .access-panel .options-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* 2-3 karty w rzędzie */
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 10px;
 }
 
-/* Karty w access panel */
-.card.option-card {
-  background-color: #353656;
-  border-radius: 8px;
-  padding: 10px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  width: 100%; /* wypełnia grid cell */
-  box-sizing: border-box;
-}
-
-
-/* Panel z kartami, który może przewijać */
 .access-panel-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* każda karta min. 150px, maksymalnie dzieli wolne miejsce */
-  gap: 10px; /* odstęp między kartami w pionie i poziomie */
-  flex: 1; /* zajmuje pozostałą wysokość */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #6467a3 transparent;
   padding-right: 5px;
 }
 
-/* Webkit scrollbars dla Chrome/Edge/Safari */
 .access-panel-cards::-webkit-scrollbar {
   width: 8px;
 }
 
-
-/* Karty w panelach */
-.card {
-  background-color: #353656;
-  border-radius: 8px; /* delikatne zaokrąglenie */
-  padding: 15px;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
-  margin-bottom: 10px;
-  max-width: 100%;
-  box-sizing: border-box;
+/* Dropdown menu user-info */
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #2b2d42;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 5px;
+  margin-top: 5px;
+  z-index: 1000;
 }
-/* Przykładowe przyciski i małe elementy z zaokrągleniem */
-button, .small-panel {
-  border-radius: 6px;
-  background-color: #46466e;
-  color: white;
-  border: none;
+
+.logout-button {
+  width: 100%;
   padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #ff4d4d;
+  color: white;
+  font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background 0.2s;
 }
 
-button:hover, .small-panel:hover {
-  background-color: #5a5ab0;
-  transform: scale(1.05);
+.current-tab {
+  color: #ff4d4d; /* np. czerwony dla wyróżnienia */
+  font-weight: normal;
+  font-size: 0.9em;
+  margin-left: 8px;
+}
+
+
+.logout-button:hover {
+  background: #cc0000;
+}
+
+/* Popup menu */
+.option-wrapper {
+  position: relative;
+}
+
+/* MainMenu.css */
+.popup-menu {
+  background-color: #2b2b2b;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 8px 0;
+  z-index: 9999;          /* DUŻY Z-INDEX */
+  pointer-events: auto;   /* zapewnia możliwość kliknięcia */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.popup-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #fff;
+}
+
+.popup-item:hover {
+  background-color: #444;
+}
+
+
+/* Animacja */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Nagłówki i tekst */
@@ -183,15 +260,62 @@ p {
   color: #ccc;
 }
 
+.current-tab {
+  background: #2b2d42;
+  color: #ff4d4d;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Logo */
 .logo-container {
-  position: fixed;  /* zamiast absolute, żeby było nad całą aplikacją */
+  position: fixed;
   top: 10px;
   left: 10px;
-  z-index: 9999; /* musi być większe niż panele */
-  pointer-events: none; /* żeby kliknięcia przechodziły do paneli */
+  z-index: 9999;
+  pointer-events: none;
 }
 
 .app-logo {
   height: 30px;
   width: auto;
+}
+
+/* Animacje accordion */
+.accordion-children {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease-out, opacity 0.25s ease-out;
+  opacity: 0;
+}
+
+.accordion-children.expanded {
+  max-height: 300px;
+  opacity: 1;
+}
+
+/* Przycisk i małe elementy */
+button, .small-panel {
+  border-radius: 6px;
+  background-color: #46466e;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+button:hover, .small-panel:hover {
+  background-color: #5a5ab0;
+  transform: scale(1.05);
+}
+
+/* Dropdown arrow */
+.dropdown-icon {
+  font-size: 0.8em;
+  margin-left: 6px;
+  color: #bbb;
 }
