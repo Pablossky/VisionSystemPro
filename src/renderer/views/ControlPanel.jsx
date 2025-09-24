@@ -4,6 +4,8 @@ import ShapeAccuracyCalculator from './../components/ShapeAccuracyCalculator';
 import ContourData from './../components/ContourData';
 import cvApi from '../../api/CvApiService';
 import markerElements from '../../data/data';
+import MiniContourPreview from '../components/MiniContourPreview';
+
 
 // 🔹 Popup do wyboru podobnych elementów
 function SimilarElementChooser({ options, onSelect }) {
@@ -20,10 +22,10 @@ function SimilarElementChooser({ options, onSelect }) {
       <div style={{ backgroundColor: 'white', padding: 20, borderRadius: 8 }}>
         <h4>Wybierz model elementu</h4>
         <ul>
-          {options.map(opt => (
-            <li key={opt} style={{ margin: 5 }}>
-              <button onClick={() => onSelect(opt.replace('.json', ''))}>
-                {opt.replace('.json', '')}
+          {options.map((opt) => (
+            <li key={opt.shape._id} style={{ margin: 5 }}>
+              <button onClick={() => onSelect(opt)}>
+                {opt.shape.name} {opt.reversed ? '(reversed)' : ''}
               </button>
             </li>
           ))}
@@ -39,6 +41,9 @@ export default function ControlPanel({ onStartScan, user }) {
   const [selectedElements, setSelectedElements] = useState(new Set());
   const [error, setError] = useState('');
   const [pendingChoice, setPendingChoice] = useState(null);
+  const [hoveredElement, setHoveredElement] = useState(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+
 
   const markerOptions = Object.keys(markerElements).map((m) => ({
     value: m,
@@ -61,25 +66,33 @@ export default function ControlPanel({ onStartScan, user }) {
       }
 
       const calculator = new ShapeAccuracyCalculator();
-
       const enriched = [];
+
       for (let index = 0; index < detectedElements.length; index++) {
         const el = detectedElements[index];
         const accuracy = calculator.calculateAccuracy(el.elementBox);
-        const similar = await cvApi.findSimilarElements(el.elementBox);
+        const comparisons = el.shapeComparisons || [];
 
         let element_name = `Element ${index + 1}`;
+        let shapeId = null;
+        let reversed = false;
 
-        if (similar.length === 1) {
-          element_name = similar[0].replace('.json', '');
-        } else if (similar.length > 1) {
+        if (comparisons.length === 1) {
+          element_name = comparisons[0].shape.name;
+          shapeId = comparisons[0].shape._id;
+          reversed = comparisons[0].reversed || false;
+        } else if (comparisons.length > 1) {
           setPendingChoice({
-            options: similar,
+            options: comparisons,
             onSelect: (selected) => {
-              const name = selected.replace('.json', '');
               setElements(prev => {
                 const newElements = [...prev];
-                newElements[index] = { ...newElements[index], element_name: name };
+                newElements[index] = {
+                  ...newElements[index],
+                  element_name: selected.shape.name,
+                  shapeId: selected.shape._id,
+                  reversed: selected.reversed || false
+                };
                 return newElements;
               });
             }
@@ -87,8 +100,10 @@ export default function ControlPanel({ onStartScan, user }) {
         }
 
         enriched.push({
-          id: index,
-          element_name,   // ✔ zawsze coś jest tu
+          id: el.elementId ?? index,   // 👈 ID z API jeśli jest
+          element_name,
+          shapeId,
+          reversed,
           data: el.elementBox,
           accuracy
         });
@@ -120,10 +135,13 @@ export default function ControlPanel({ onStartScan, user }) {
 
     try {
       for (const el of selectedElemsArray) {
-        const shapeId = el.element_name;
-        await cvApi.measureElement(el.id, shapeId, 0);
+        if (!el.shapeId) throw new Error(`Brak shapeId dla elementu ${el.id}`);
+        await cvApi.measureElement(el.id, el.shapeId, 0, el.reversed); // reversed przekazujemy
         await cvApi.getMeasuredElement(el.id);
       }
+
+      // czyścimy dane po skanie
+      await cvApi.clearMeasurementData();
 
       onStartScan(selectedElemsArray);
 
@@ -148,12 +166,6 @@ export default function ControlPanel({ onStartScan, user }) {
     <div className="control-panel">
       <h2>Kontrola elementów</h2>
 
-      <Select
-        options={markerOptions}
-        onChange={(selected) => setMarkerNumber(selected?.value || '')}
-        placeholder="Wybierz marker..."
-        isClearable
-      />
       <button onClick={handleLoadElements}>Załaduj elementy</button>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -163,7 +175,17 @@ export default function ControlPanel({ onStartScan, user }) {
           <h3>Elementy do kontroli:</h3>
           <ul>
             {elements.map((el) => (
-              <li key={el.id}>
+              <li
+                key={el.id}
+                onMouseEnter={(e) => {
+                  setHoveredElement(el);
+                  setHoverPos({ x: e.clientX, y: e.clientY });
+                }}
+                onMouseMove={(e) => {
+                  setHoverPos({ x: e.clientX, y: e.clientY });
+                }}
+                onMouseLeave={() => setHoveredElement(null)}
+              >
                 <label>
                   <input
                     type="checkbox"
@@ -177,8 +199,10 @@ export default function ControlPanel({ onStartScan, user }) {
                   }}>
                     {el.accuracy}%
                   </span>
+                  {el.reversed && <span style={{ marginLeft: 8, color: 'blue' }}>(reversed)</span>}
                 </label>
               </li>
+
             ))}
           </ul>
 
@@ -196,6 +220,17 @@ export default function ControlPanel({ onStartScan, user }) {
           }}
         />
       )}
+
+      {hoveredElement && (
+        <MiniContourPreview
+          element={hoveredElement}
+          x={hoverPos.x}
+          y={hoverPos.y}
+        />
+      )}
+
     </div>
+
+
   );
 }
