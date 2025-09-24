@@ -62,6 +62,7 @@ export default function ControlPanel({ onStartScan, user }) {
 
       const calculator = new ShapeAccuracyCalculator();
 
+      const enriched = [];
       for (let index = 0; index < detectedElements.length; index++) {
         const el = detectedElements[index];
         const accuracy = calculator.calculateAccuracy(el.elementBox);

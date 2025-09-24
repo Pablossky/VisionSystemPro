@@ -34,6 +34,11 @@ export class CvApiSimulator {
     return { measurementInfo: this.measurementInfo };
   }
 
+  async findSimilarElements(elementBox) {
+    // Możesz zwrócić elementy na podstawie boxa, na razie demo
+    return ["L001728656NCPAB.json", "L001728655NCPAB.json"];
+  }
+
   async takeMeasurementPhotos() {
     if (this.measurementInfo.imagesCaptures) throw new Error("Measurement photos were already taken");
     this.measurementInfo.imagesCaptures = true;
